@@ -282,8 +282,17 @@ const TerminalLogin = ({ onLoginSuccess, t }: { onLoginSuccess: (p: any) => void
  else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-        setStatus("success"); setTimeout(() => onLoginSuccess(profile || { codename: "UNKNOWN_AGENT" }), 2000);
+        const { data: profile, error: profileErr } = await supabase.from("profiles").select("*").eq("id", data.user.id).maybeSingle();
+if (!profile) {
+  // 账号存在，但资料已缺失/被删 —— 强制登出，不允许进入系统
+  await supabase.auth.signOut();
+  setStatus("idle");
+  setErrorMsg("> [ERROR] Account data missing or corrupted. Please contact admin.");
+  return;
+}
+setStatus("success"); 
+setTimeout(() => onLoginSuccess(profile), 2000);
+
       }
     } catch (err: any) { 
       setStatus("idle"); 
