@@ -60,7 +60,7 @@ const TRANSLATIONS = {
     login_tab: "身份接入 (LOGIN)",
     reg_tab: "代号注册 (REGISTER)",
     email: "通讯标识 (邮箱)",
-    codename: "专属代号 (中英均可)",
+    codename: "专属代号 (用户名)",
     password: "访问密钥 (密码)",
     connect_btn: "建立安全连接",
     verifying: "正在核实身份凭证...",
@@ -79,7 +79,7 @@ const TRANSLATIONS = {
     quick_access: "快捷指令区",
     scan: "频段刷新",
     target: "定向追踪",
-    inject: "信号注入",
+    inject: "数据注入",
     target_input: "[ 输入专属追踪码 ]",
     target_btn: "执行检索",
     disconnect: "断开连接",
@@ -89,9 +89,9 @@ const TRANSLATIONS = {
     pass_placeholder: "设置 6 位数字密码",
     inject_btn: "[ 执行数据注入 ]",
     uploading: "正在上传并加密数据包...",
-    secure: "数据已安全汇入暗网深渊。",
+    secure: "数据已安全汇入暗网。",
     decrypt_btn: "[ 破解加密档案 ]",
-    reply_placeholder: "输入回音数据包...",
+    reply_placeholder: "输入回复...",
     no_replies: "> 暂无任何响应协议。"
   }
 };
