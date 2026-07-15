@@ -163,7 +163,10 @@ const Panel = ({ title, children, className = "" }: any) => (
 const ProgressBar = ({ label, value, icon: Icon }: any) => (
   <div className="flex flex-col gap-2 mb-4">
     <div className="flex justify-between items-center text-xs text-slate-300 tracking-wider">
-      <div className="flex items-center gap-2"><Icon size={16} className="text-slate-400" /><span>{label}</span></div>
+      <div className="flex items-center gap-2">
+        <Icon size={16} className="text-slate-400" />
+        <span>{label}</span>
+      </div>
       <span className="text-slate-200 font-bold">{value}%</span>
     </div>
     <div className="w-full h-[3px] bg-slate-800 relative overflow-hidden">
@@ -342,9 +345,8 @@ const TerminalLogin = ({ onLoginSuccess, t }: { onLoginSuccess: (p: any) => void
     </div>
   );
 };
-
 // ==========================================
-// 5. 弹窗与交互模块 (解密阅读弹窗)
+// 5. 弹窗与交互模块 (阅读与发帖)
 // ==========================================
 const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
   const dec = useScrambleText(signal.text);
@@ -424,9 +426,9 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
       )}
 
       {step === "read" && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] h-[85%] md:h-[700px] bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]">
-          <div className="flex justify-between border-b border-slate-700 pb-4 mb-6 items-center">
-            <span className="text-slate-300 text-sm font-bold tracking-widest truncate max-w-[250px] md:max-w-[400px]">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] h-[85%] md:h-[700px] bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
+          <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-center">
+            <span className="text-slate-300 text-sm font-bold tracking-widest truncate max-w-[250px] md:max-w-[400px] drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
             <div className="flex items-center gap-5">
                {isAuthor && <button onClick={handleDelete} className="text-[#802020] hover:text-red-500 font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer"><Trash2 size={14}/> [ PURGE ]</button>}
                <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
@@ -434,14 +436,14 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
           </div>
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar text-base md:text-lg mb-6 text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
-              <span className="text-sm text-slate-400 block mb-6 border-b border-slate-800 pb-3 font-bold">OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
+              <span className="text-sm text-slate-400 block mb-6 border-b border-slate-800/50 pb-3 font-bold">OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
               {dec}
             </div>
-            <div className="h-[150px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700 pl-4 mb-5 bg-[#0a0d14] p-4 rounded-sm">
+            <div className="h-[150px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-5 bg-[#0a0d14]/40 p-4 rounded-sm">
               {replies.map(r => {
                 const isReplyAuthor = r.author_codename === signal.author_codename;
                 return (
-                  <div key={r.id} className="border-b border-slate-800/50 pb-2">
+                  <div key={r.id} className="border-b border-slate-800/30 pb-2">
                     &gt; <span className={`${isReplyAuthor ? 'text-[#9e3f4d]' : 'text-slate-300'} font-bold`}>
                       [{r.author_codename}]
                       {isReplyAuthor && <User size={14} className="inline ml-1 mb-0.5"/>}
@@ -449,11 +451,11 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
                   </div>
                 )
               })}
-              {replies.length === 0 && <div className="italic text-slate-600 font-bold">{t.no_replies}</div>}
+              {replies.length === 0 && <div className="italic text-slate-500 font-bold">{t.no_replies}</div>}
             </div>
-            <div className="flex items-center gap-3 border-t border-slate-700 pt-5">
+            <div className="flex items-center gap-3 border-t border-slate-700/50 pt-5">
               <span className="text-slate-400 font-bold text-lg">&gt;</span>
-              <input type="text" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={sendR} placeholder={t.reply_placeholder} className="w-full bg-[#11141c] border border-slate-700 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text" />
+              <input type="text" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={sendR} placeholder={t.reply_placeholder} className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text rounded-sm" />
             </div>
           </div>
         </motion.div>
@@ -461,6 +463,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
     </motion.div>
   );
 };
+
 const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
@@ -487,23 +490,23 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
   return <AnimatePresence>{isOpen && (
     <motion.div key="inject-modal" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 pointer-events-none">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#0a0d14]/90 backdrop-blur-sm pointer-events-auto cursor-pointer" onClick={status === "idle" ? onClose : undefined} />
-      <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="relative w-full max-w-[900px] h-[90vh] md:h-[85vh] bg-[#0c1017] border border-slate-600 p-6 md:p-10 flex flex-col pointer-events-auto overflow-y-auto shadow-[0_0_100px_rgba(0,0,0,1)]">
-        <div className="flex justify-between border-b border-slate-700 pb-5 mb-4 md:mb-6 shrink-0">
+      <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="relative w-full max-w-[900px] h-[90vh] md:h-[85vh] bg-[#0c1017] border border-slate-700 p-6 md:p-10 flex flex-col pointer-events-auto overflow-y-auto shadow-[0_0_100px_rgba(0,0,0,1)]">
+        <div className="flex justify-between border-b border-slate-800 pb-5 mb-4 md:mb-6 shrink-0">
           <span className="text-slate-200 text-sm md:text-xl font-bold flex items-center gap-3"><FileText size={24} className="text-[#7a2f3a]"/> [ SECURE_COMPOSE_ENVIRONMENT ]</span>
           <button onClick={status==="success" ? closeAndReset : onClose} className="text-slate-600 hover:text-white cursor-pointer"><X size={28}/></button>
         </div>
         
         {status === "idle" && <>
-          <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="RECORD_TITLE (Optional)" className="w-full bg-[#11141c] border border-slate-700 p-4 md:p-5 text-base md:text-lg text-slate-100 font-bold outline-none focus:border-slate-500 mb-5 cursor-text"/>
-          <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="> COMMENCE_TYPING..." className="flex-1 min-h-[200px] w-full bg-[#0a0d14] border border-slate-700 p-5 md:p-6 text-sm md:text-base text-slate-200 outline-none focus:border-[#7a2f3a] resize-none mb-5 custom-scrollbar leading-relaxed cursor-text"/>
+          <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="RECORD_TITLE (Optional)" className="w-full bg-[#11141c] border border-slate-800 p-4 md:p-5 text-base md:text-lg text-slate-100 font-bold outline-none focus:border-slate-600 mb-5 cursor-text"/>
+          <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="> COMMENCE_TYPING..." className="flex-1 min-h-[200px] w-full bg-[#0a0d14] border border-slate-800 p-5 md:p-6 text-sm md:text-base text-slate-200 outline-none focus:border-[#7a2f3a] resize-none mb-5 custom-scrollbar leading-relaxed cursor-text"/>
           <div className="flex flex-col md:flex-row items-stretch md:items-end gap-5 shrink-0">
-            <div className="flex-1 border border-slate-700 bg-[#11141c] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 border border-slate-800 bg-[#11141c] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <label className="flex items-center gap-3 text-sm text-slate-300 font-bold cursor-pointer">
                 <input type="checkbox" checked={isEncrypted} onChange={(e) => setIsEncrypted(e.target.checked)} className="accent-[#7a2f3a] w-5 h-5 cursor-pointer" /> {t.encrypt_check}
               </label>
-              {isEncrypted && <input type="text" maxLength={6} placeholder={t.pass_placeholder} value={passkey} onChange={e=>setPasskey(e.target.value.replace(/[^0-9]/g, ''))} className="w-full md:w-40 bg-[#0a0d14] border border-slate-600 p-3 text-center text-base text-[#9e3f4d] tracking-[0.2em] font-bold outline-none focus:border-[#7a2f3a] cursor-text" />}
+              {isEncrypted && <input type="text" maxLength={6} placeholder={t.pass_placeholder} value={passkey} onChange={e=>setPasskey(e.target.value.replace(/[^0-9]/g, ''))} className="w-full md:w-40 bg-[#0a0d14] border border-slate-700 p-3 text-center text-base text-[#9e3f4d] tracking-[0.2em] font-bold outline-none focus:border-[#7a2f3a] cursor-text" />}
             </div>
-            <button onClick={handleInject} className="py-5 px-12 bg-[#11141c] border-2 border-slate-600 text-slate-200 text-base font-bold hover:border-[#7a2f3a] hover:bg-[#1a0f12] hover:text-[#7a2f3a] transition-all w-full md:w-auto cursor-pointer">
+            <button onClick={handleInject} className="py-5 px-12 bg-[#11141c] border-2 border-slate-700 text-slate-200 text-base font-bold hover:border-[#7a2f3a] hover:bg-[#1a0f12] hover:text-[#7a2f3a] transition-all w-full md:w-auto cursor-pointer">
               {t.inject_btn}
             </button>
           </div>
@@ -516,7 +519,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
             <Shield size={72} className="text-slate-500"/>
             <div className="text-base text-slate-200">
               {t.secure}<br/><br/>您的专属通讯密钥为：<br/>
-              <span className="text-3xl text-white font-bold block mt-6 border border-slate-600 p-4 bg-[#0a0d14] select-all shadow-lg">{generatedCode}</span>
+              <span className="text-3xl text-white font-bold block mt-6 border border-slate-700 p-4 bg-[#0a0d14] select-all shadow-lg">{generatedCode}</span>
               <br/><span className="text-slate-500 text-sm mt-2 block">（请截图保存，可在 TARGET 终端检索）</span>
             </div>
             <button onClick={closeAndReset} className="mt-10 px-10 py-4 border-2 border-slate-700 text-slate-300 font-bold hover:text-white hover:border-slate-500 cursor-pointer">CLOSE TERMINAL</button>
@@ -651,7 +654,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
 
             <Crosshair size={30} className="absolute text-[#7a2f3a] z-20" strokeWidth={1.5} />
             <div className="absolute w-[40px] h-[40px] rounded-full border border-[#7a2f3a]/40 z-10"></div>
-            <div className="absolute w-full h-[1px] bg-slate-700/30"></div><div className="absolute w-[1px] h-full bg-slate-700/30"></div>
+            <div className="absolute w-full h-[1px] bg-slate-700/40"></div><div className="absolute w-[1px] h-full bg-slate-700/40"></div>
             
             <div className="absolute inset-16 md:inset-20 rounded-full border border-slate-700/30"></div>
             <div className="absolute inset-32 md:inset-40 rounded-full border-[2px] border-slate-800/50 border-dashed"></div>
@@ -720,14 +723,14 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
             {isTargeting ? (
               <div className="flex flex-col gap-3 p-2">
                 <div className="text-sm text-slate-400 font-bold flex justify-between items-center mb-1"><span>{t.target_input}</span> <X size={20} className="cursor-pointer text-slate-500 hover:text-white" onClick={()=>setIsTargeting(false)}/></div>
-                <input type="text" value={targetCode} onChange={e=>setTargetCode(e.target.value)} placeholder="ONC-XXXX" className="bg-[#0a0d14] border border-slate-700 p-4 text-base text-slate-100 outline-none uppercase font-bold text-center focus:border-[#7a2f3a]"/>
-                <button onClick={handleTargetSearch} className="bg-[#11141c] border border-slate-600 text-slate-200 text-sm font-bold p-4 hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">{t.target_btn}</button>
+                <input type="text" value={targetCode} onChange={e=>setTargetCode(e.target.value)} placeholder="ONC-XXXX" className="bg-[#0a0d14] border border-slate-800 p-4 text-base text-slate-100 outline-none uppercase font-bold text-center focus:border-[#7a2f3a]"/>
+                <button onClick={handleTargetSearch} className="bg-[#11141c] border border-slate-700 text-slate-300 text-sm font-bold p-4 hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">{t.target_btn}</button>
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-2 md:gap-3">
-                 <button onClick={handleScanRefresh} className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-800 hover:bg-[#11141c] text-slate-400 hover:text-slate-200 text-[11px] md:text-xs whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><RefreshCw size={20}/>{t.scan}</button>
-                 <button onClick={() => setIsTargeting(true)} className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-800 hover:bg-[#11141c] text-slate-400 hover:text-slate-200 text-[11px] md:text-xs whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><Search size={20}/>{t.target}</button>
-                 <button onClick={() => setIsInjectModalOpen(true)} className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-700 bg-[#11141c] hover:border-[#7a2f3a] text-slate-300 hover:text-[#7a2f3a] text-[11px] md:text-xs whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><Code size={20}/>{t.inject}</button>
+                 <button onClick={handleScanRefresh} className="flex flex-col items-center justify-center gap-3 p-4 border border-slate-800 hover:bg-[#11141c] text-slate-400 hover:text-slate-200 text-[11px] md:text-xs whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><RefreshCw size={20}/>{t.scan}</button>
+                 <button onClick={() => setIsTargeting(true)} className="flex flex-col items-center justify-center gap-3 p-4 border border-slate-800 hover:bg-[#11141c] text-slate-400 hover:text-slate-200 text-[11px] md:text-xs whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><Search size={20}/>{t.target}</button>
+                 <button onClick={() => setIsInjectModalOpen(true)} className="flex flex-col items-center justify-center gap-3 p-4 border border-slate-700 bg-[#11141c] hover:border-[#7a2f3a] text-slate-300 hover:text-[#7a2f3a] text-[11px] md:text-xs whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><Code size={20}/>{t.inject}</button>
               </div>
             )}
           </Panel>
