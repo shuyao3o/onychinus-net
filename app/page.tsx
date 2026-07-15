@@ -746,6 +746,14 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
         </aside>
       </main>
 
+      <InjectPanel 
+        isOpen={isInjectModalOpen} 
+        onClose={() => setIsInjectModalOpen(false)} 
+        onRefresh={fetchSignals} 
+        currentUser={currentUser} 
+        t={t} 
+      />
+
       <footer className="relative z-20 hidden lg:flex justify-between items-center pt-4 border-t border-slate-800 shrink-0 text-sm tracking-widest text-slate-600 font-bold mt-4">
         <button onClick={onLogout} className="flex items-center gap-3 text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-6 py-3 bg-[#0c1017] cursor-pointer transition-colors"><Power size={16}/> {t.disconnect}</button>
         <div className="flex gap-20">
