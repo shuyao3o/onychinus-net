@@ -401,7 +401,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
   };
 
   return (
-    <motion.div key="decrypt-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 flex items-center justify-center bg-[#0a0d14]/80 backdrop-blur-md px-4">
+    <motion.div key="decrypt-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0a0d14]/80 backdrop-blur-md px-4 overflow-y-auto py-6">
       {step === "preview" && (
         <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="relative w-full max-w-[450px] bg-[#0c1017] border border-slate-600 shadow-[0_0_50px_rgba(0,0,0,0.9)] p-8 font-mono text-slate-200 flex flex-col">
           <div className="flex justify-between border-b border-slate-700 pb-4 mb-6 items-center">
@@ -443,7 +443,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
       )}
 
       {step === "read" && (
-  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] h-[90dvh] md:h-[700px] max-h-[700px] bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
+  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[90dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
     <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-center">
       <span className="text-slate-300 text-sm font-bold tracking-widest truncate max-w-[250px] md:max-w-[400px] drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
       <div className="flex items-center gap-5">
