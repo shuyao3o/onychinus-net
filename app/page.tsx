@@ -381,12 +381,13 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
   
   useEffect(() => { if (step === "read") fetchR(); }, [signal.id, step]);
 
-  const sendR = async (e: any) => {
-    if(e.key === "Enter" && input.trim()) {
-      await supabase.from("replies").insert({ signal_id: signal.id, text: input, author_codename: currentUser?.codename || "UNKNOWN", author_id: currentUser?.id || null });
-      setInput(""); fetchR();
-    }
-  };
+  const handleSendReply = async () => {
+  if (!input.trim()) return;
+  await supabase.from("replies").insert({ signal_id: signal.id, text: input, author_codename: currentUser?.codename || "UNKNOWN", author_id: currentUser?.id || null });
+  setInput(""); 
+  fetchR();
+};
+
 
   const handleDecryptClick = () => { if (signal.passkey) setStep("auth"); else setStep("read"); };
   const handleUnlock = () => { if (passkeyInput === signal.passkey) { setStep("read"); setPassError(false); } else { setPassError(true); setPasskeyInput(""); } };
@@ -442,39 +443,40 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
       )}
 
       {step === "read" && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] h-[85%] md:h-[700px] bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
-          <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-center">
-            <span className="text-slate-300 text-sm font-bold tracking-widest truncate max-w-[250px] md:max-w-[400px] drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
-            <div className="flex items-center gap-5">
-               {isAuthor && <button onClick={handleDelete} className="text-[#802020] hover:text-red-500 font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer"><Trash2 size={14}/> [ PURGE ]</button>}
-               <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
+  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] h-[90dvh] md:h-[700px] max-h-[700px] bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
+    <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-center">
+      <span className="text-slate-300 text-sm font-bold tracking-widest truncate max-w-[250px] md:max-w-[400px] drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
+      <div className="flex items-center gap-5">
+         {isAuthor && <button onClick={handleDelete} className="text-[#802020] hover:text-red-500 font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer"><Trash2 size={14}/> [ PURGE ]</button>}
+         <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
+      </div>
+    </div>
+    <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+      <div className="flex-1 min-h-[100px] overflow-y-auto pr-4 custom-scrollbar text-base md:text-lg mb-4 text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
+        <span className="text-sm text-slate-400 block mb-6 border-b border-slate-800/50 pb-3 font-bold">OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
+        {dec}
+      </div>
+      <div className="max-h-[120px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-4 bg-[#0a0d14]/40 p-4 rounded-sm">
+        {replies.map(r => {
+          const isReplyAuthor = r.author_codename === signal.author_codename;
+          return (
+            <div key={r.id} className="border-b border-slate-800/30 pb-2">
+              &gt; <span className={`${isReplyAuthor ? 'text-[#9e3f4d]' : 'text-slate-300'} font-bold`}>
+                [{r.author_codename}]
+                {isReplyAuthor && <User size={14} className="inline ml-1 mb-0.5"/>}
+              </span>: <span className="text-slate-300 ml-2">{r.text}</span>
             </div>
-          </div>
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar text-base md:text-lg mb-6 text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
-              <span className="text-sm text-slate-400 block mb-6 border-b border-slate-800/50 pb-3 font-bold">OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
-              {dec}
-            </div>
-            <div className="h-[150px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-5 bg-[#0a0d14]/40 p-4 rounded-sm">
-              {replies.map(r => {
-                const isReplyAuthor = r.author_codename === signal.author_codename;
-                return (
-                  <div key={r.id} className="border-b border-slate-800/30 pb-2">
-                    &gt; <span className={`${isReplyAuthor ? 'text-[#9e3f4d]' : 'text-slate-300'} font-bold`}>
-                      [{r.author_codename}]
-                      {isReplyAuthor && <User size={14} className="inline ml-1 mb-0.5"/>}
-                    </span>: <span className="text-slate-300 ml-2">{r.text}</span>
-                  </div>
-                )
-              })}
-              {replies.length === 0 && <div className="italic text-slate-500 font-bold">{t.no_replies}</div>}
-            </div>
-            <div className="flex items-center gap-3 border-t border-slate-700/50 pt-5">
-              <span className="text-slate-400 font-bold text-lg">&gt;</span>
-              <input type="text" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={sendR} placeholder={t.reply_placeholder} className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text rounded-sm" />
-            </div>
-          </div>
-        </motion.div>
+          )
+        })}
+        {replies.length === 0 && <div className="italic text-slate-500 font-bold">{t.no_replies}</div>}
+      </div>
+      <form onSubmit={(e) => { e.preventDefault(); handleSendReply(); }} className="flex items-center gap-3 border-t border-slate-700/50 pt-4 shrink-0">
+        <span className="text-slate-400 font-bold text-lg">&gt;</span>
+        <input type="text" value={input} onChange={e=>setInput(e.target.value)} placeholder={t.reply_placeholder} className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text rounded-sm" />
+        <button type="submit" className="shrink-0 px-4 py-3 md:py-4 bg-[#11141c] border border-slate-600 text-slate-300 font-bold text-sm hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">SEND</button>
+      </form>
+    </div>
+  </motion.div>
       )}
     </motion.div>
   );
