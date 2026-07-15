@@ -264,13 +264,22 @@ const TerminalLogin = ({ onLoginSuccess, t }: { onLoginSuccess: (p: any) => void
     setStatus("authenticating"); setErrorMsg("");
     try {
       if (isRegistering) {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        if (data.user) {
-          await supabase.from("profiles").insert({ id: data.user.id, email, codename });
-          setStatus("success"); setTimeout(() => onLoginSuccess({ codename }), 2000);
-        }
-      } else {
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) throw error;
+  if (!data.user) { 
+    setErrorMsg("> [ERROR] Registration failed, no user returned."); 
+    setStatus("idle"); 
+    return; 
+  }
+  const userId = data.user.id;  // ← 关键：提前取出来存到普通变量
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .insert({ id: userId, email, codename });
+  if (profileError) throw profileError;
+  setStatus("success");
+  setTimeout(() => onLoginSuccess({ id: userId, email, codename }), 2000);
+}
+ else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
@@ -354,7 +363,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
   const [passError, setPassError] = useState(false);
   const [step, setStep] = useState<"preview" | "auth" | "read">("preview");
 
-  const isAuthor = currentUser?.codename === signal.author_codename;
+  const isAuthor = signal.author_id ? currentUser?.id === signal.author_id : currentUser?.codename === signal.author_codename;
 
   const fetchR = async () => { 
     const { data } = await supabase.from("replies").select("*").eq("signal_id", signal.id).order("created_at"); 
@@ -365,7 +374,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
 
   const sendR = async (e: any) => {
     if(e.key === "Enter" && input.trim()) {
-      await supabase.from("replies").insert({ signal_id: signal.id, text: input, author_codename: currentUser?.codename || "UNKNOWN" });
+      await supabase.from("replies").insert({ signal_id: signal.id, text: input, author_codename: currentUser?.codename || "UNKNOWN", author_id: currentUser?.id || null });
       setInput(""); fetchR();
     }
   };
@@ -477,7 +486,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
     const finalTitle = title.trim()||"UNTITLED_RECORD";
     const { error } = await supabase.from("signals").insert({ 
       title: finalTitle, text, pos_x: Math.floor(Math.random()*80)+10, pos_y: Math.floor(Math.random()*80)+10, 
-      author_codename: currentUser?.codename || "UNKNOWN", access_code: accessCode, passkey: isEncrypted ? passkey : null 
+      author_codename: currentUser?.codename || "UNKNOWN", author_id: currentUser?.id || null, access_code: accessCode, passkey: isEncrypted ? passkey : null 
     });
     if(!error) { setGeneratedCode(accessCode); setTimeout(() => setStatus("success"), 1000); }
   };
@@ -590,7 +599,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
     }
   };
 
-  const mySignals = cloudPool.filter(s => s.author_codename === currentUser?.codename);
+  const mySignals = cloudPool.filter(s => s.author_id ? s.author_id === currentUser?.id : s.author_codename === currentUser?.codename);
 
   return (
     <div className="min-h-screen lg:h-screen w-screen bg-[#0a0d14] text-slate-400 font-mono flex flex-col p-2 lg:p-6 relative overflow-y-auto lg:overflow-hidden">
