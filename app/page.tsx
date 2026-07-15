@@ -127,20 +127,10 @@ const ScrambleInput = ({ value, onChange, placeholder }: { value: string, onChan
               {isRevealed ? value : display}
             </span>
           )}
-          <motion.span 
-            animate={{ opacity: [1, 0] }} 
-            transition={{ repeat: Infinity, duration: 0.8 }} 
-            className="ml-1 w-2 h-5 bg-[#7a2f3a] inline-block" 
-          />
+          <motion.span animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.8 }} className="ml-1 w-2 h-5 bg-[#7a2f3a] inline-block" />
         </div>
       </div>
-      <button 
-        type="button" 
-        onMouseDown={() => setIsRevealed(true)} 
-        onMouseUp={() => setIsRevealed(false)} 
-        onMouseLeave={() => setIsRevealed(false)} 
-        className="p-3 z-30 text-slate-400 hover:text-white transition-colors cursor-pointer"
-      >
+      <button type="button" onMouseDown={() => setIsRevealed(true)} onMouseUp={() => setIsRevealed(false)} onMouseLeave={() => setIsRevealed(false)} className="p-3 z-30 text-slate-400 hover:text-white transition-colors cursor-pointer">
         {isRevealed ? <EyeOff size={20} /> : <Eye size={20} />}
       </button>
     </div>
@@ -167,10 +157,7 @@ const Panel = ({ title, children, className = "" }: any) => (
 const ProgressBar = ({ label, value, icon: Icon }: any) => (
   <div className="flex flex-col gap-2 mb-4">
     <div className="flex justify-between items-center text-xs text-slate-300 tracking-wider">
-      <div className="flex items-center gap-2">
-        <Icon size={16} className="text-slate-400" />
-        <span>{label}</span>
-      </div>
+      <div className="flex items-center gap-2"><Icon size={16} className="text-slate-400" /><span>{label}</span></div>
       <span className="text-slate-200 font-bold">{value}%</span>
     </div>
     <div className="w-full h-[3px] bg-slate-800 relative overflow-hidden">
@@ -182,16 +169,13 @@ const ProgressBar = ({ label, value, icon: Icon }: any) => (
 const useScrambleText = (text: string) => {
   const [d, setD] = useState("");
   useEffect(() => {
-    let i = 0; 
-    const chars = "!<>-_\\/[]{}—=+*^?#";
+    let i = 0; const chars = "!<>-_\\/[]{}—=+*^?#";
     const scrambleLimit = Math.min(text?.length || 0, 100); 
     if (scrambleLimit === 0) return;
-    
     const int = setInterval(() => {
       const scrambledPart = text.substring(0, scrambleLimit).split("").map((c, idx) => idx < i ? text[idx] : chars[Math.floor(Math.random()*chars.length)]).join("");
       const rest = text.substring(scrambleLimit);
       setD(scrambledPart + (i >= scrambleLimit ? rest : ""));
-      
       if (i >= scrambleLimit) clearInterval(int); 
       i += Math.ceil(scrambleLimit / 20); 
     }, 40);
@@ -218,11 +202,7 @@ const Gatekeeper = ({ onSuccess, t }: { onSuccess: () => void, t: any }) => {
   };
 
   return (
-    <motion.div 
-      animate={{ backgroundColor: error ? ["#0a0d14", "#7a2f3a", "#0a0d14"] : "#0a0d14" }} 
-      transition={{ duration: 0.5 }} 
-      className="h-screen w-screen flex flex-col items-center justify-center font-mono relative selection:bg-[#7a2f3a] selection:text-white"
-    >
+    <motion.div animate={{ backgroundColor: error ? ["#0a0d14", "#7a2f3a", "#0a0d14"] : "#0a0d14" }} transition={{ duration: 0.5 }} className="h-screen w-screen flex flex-col items-center justify-center font-mono relative selection:bg-[#7a2f3a] selection:text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#12161f_0%,transparent_100%)] z-0 pointer-events-none"></div>
       
       <div className="relative z-10 w-[90%] max-w-lg text-center">
@@ -238,11 +218,7 @@ const Gatekeeper = ({ onSuccess, t }: { onSuccess: () => void, t: any }) => {
             ))}
          </div>
          
-         <input 
-           type="tel" maxLength={6} autoFocus value={code} 
-           onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))} 
-           className="absolute inset-0 opacity-0 cursor-text"
-         />
+         <input type="tel" maxLength={6} autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))} className="absolute inset-0 opacity-0 cursor-text" />
          
          {error && <div className="text-black font-bold text-base tracking-widest animate-pulse mt-4 bg-[#7a2f3a] inline-block px-6 py-2">{t.gatekeeper_error}</div>}
          
@@ -350,8 +326,9 @@ const TerminalLogin = ({ onLoginSuccess, t }: { onLoginSuccess: (p: any) => void
     </div>
   );
 };
+
 // ==========================================
-// 5. 弹窗与交互模块 (阅读与发帖)
+// 5. 弹窗与交互模块 (解密阅读弹窗)
 // ==========================================
 const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
   const dec = useScrambleText(signal.text);
@@ -389,7 +366,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 flex items-center justify-center bg-[#0a0d14]/80 backdrop-blur-md px-4">
+    <motion.div key="decrypt-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 flex items-center justify-center bg-[#0a0d14]/80 backdrop-blur-md px-4">
       {step === "preview" && (
         <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="relative w-full max-w-[450px] bg-[#0c1017] border border-slate-600 shadow-[0_0_50px_rgba(0,0,0,0.9)] p-8 font-mono text-slate-200 flex flex-col">
           <div className="flex justify-between border-b border-slate-700 pb-4 mb-6 items-center">
@@ -468,7 +445,6 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
     </motion.div>
   );
 };
-
 const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
@@ -493,7 +469,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
   const closeAndReset = () => { setStatus("idle"); setTitle(""); setText(""); setPasskey(""); setIsEncrypted(false); setGeneratedCode(""); onRefresh(); onClose(); };
 
   return <AnimatePresence>{isOpen && (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 pointer-events-none">
+    <motion.div key="inject-modal" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 pointer-events-none">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#0a0d14]/90 backdrop-blur-sm pointer-events-auto cursor-pointer" onClick={status === "idle" ? onClose : undefined} />
       <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="relative w-full max-w-[900px] h-[90vh] md:h-[85vh] bg-[#0c1017] border border-slate-600 p-6 md:p-10 flex flex-col pointer-events-auto overflow-y-auto shadow-[0_0_100px_rgba(0,0,0,1)]">
         <div className="flex justify-between border-b border-slate-700 pb-5 mb-4 md:mb-6 shrink-0">
@@ -531,7 +507,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
           </div>
         )}
       </motion.div>
-    </div>
+    </motion.div>
   )}</AnimatePresence>;
 };
 
@@ -635,20 +611,27 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
         </aside>
 
         <section className="flex-1 flex items-center justify-center relative border border-slate-700/60 bg-[#0c1017]/40 p-4 lg:p-0 min-h-[400px] overflow-hidden">
-          <div className="relative w-full max-w-[600px] aspect-square flex items-center justify-center z-10">
+          <div className="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-slate-700"></div>
+          <div className="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-slate-700"></div>
+          <div className="absolute bottom-6 left-6 w-8 h-8 border-b-2 border-l-2 border-slate-700"></div>
+          <div className="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-slate-700"></div>
+          
+          <div className="absolute inset-0 bg-[#0a0d14] blur-[150px] opacity-10 rounded-full z-0 pointer-events-none"></div>
+          
+          <div className="relative w-full max-w-[600px] aspect-square flex items-center justify-center z-10 scale-90 lg:scale-100">
             <div className="absolute -top-6 text-xs text-slate-500 font-bold hidden md:block">000° LAT: {scanNumbers.lat}</div>
             <div className="absolute -bottom-6 text-xs text-slate-500 font-bold hidden md:block">180° LNG: {scanNumbers.lng}</div>
             <div className="absolute -left-10 text-xs text-slate-500 font-bold hidden md:block">270°</div>
             <div className="absolute -right-10 text-xs text-slate-500 font-bold hidden md:block">090°</div>
 
-            <Crosshair size={40} className="absolute text-slate-600 z-10" strokeWidth={1.5} />
-            <div className="absolute w-[50px] h-[50px] rounded-full border border-[#7a2f3a]/40 z-10"></div>
-            <div className="absolute w-full h-[1px] bg-slate-700/30"></div><div className="absolute w-[1px] h-full bg-slate-700/30"></div>
+            <Crosshair size={30} className="absolute text-[#7a2f3a] z-20" strokeWidth={1.5} />
+            <div className="absolute w-[40px] h-[40px] rounded-full border border-[#7a2f3a]/40 z-10"></div>
+            <div className="absolute w-full h-[1px] bg-slate-700/40"></div><div className="absolute w-[1px] h-full bg-slate-700/40"></div>
             
             <div className="absolute inset-16 md:inset-20 rounded-full border border-slate-700/30"></div>
             <div className="absolute inset-32 md:inset-40 rounded-full border-[2px] border-slate-800/50 border-dashed"></div>
             
-            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 25, ease: "linear" }} className="absolute inset-24 md:inset-28 rounded-full border border-slate-700/40 border-dotted">
+            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 15, ease: "linear" }} className="absolute inset-24 md:inset-28 rounded-full border border-slate-700/40 border-dotted">
                <div className="absolute top-0 left-1/2 w-2 h-2 bg-[#7a2f3a] rounded-full shadow-[0_0_10px_#7a2f3a]"></div>
             </motion.div>
 
@@ -670,7 +653,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
               <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#0c1017]/80 rounded-full backdrop-blur-sm">
                 <div className="flex flex-col items-center gap-4">
                   <RefreshCw size={40} className="text-slate-500 animate-spin" />
-                  <span className="text-sm text-slate-400 font-bold tracking-widest animate-pulse">RE-SCANNING SECTOR...</span>
+                  <span className="text-sm text-slate-500 tracking-widest animate-pulse">RE-SCANNING SECTOR...</span>
                 </div>
               </div>
             ) : (
@@ -695,7 +678,9 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
               ))
             )}
           </div>
-          <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onRefresh={fetchSignals} onClose={() => setActiveSignal(null)} />}</AnimatePresence>
+
+          <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onClose={() => setActiveSignal(null)} onRefresh={fetchSignals} />}</AnimatePresence>
+
         </section>
 
         <aside className="w-full lg:w-[320px] flex flex-col gap-6 shrink-0 lg:overflow-y-auto custom-scrollbar lg:pl-3">
@@ -703,31 +688,31 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
              <div className="flex items-center gap-6 mt-6 md:mt-8">
                 <div className="w-16 h-16 md:w-24 md:h-24 rounded-full border-4 border-slate-800 border-t-slate-500 flex items-center justify-center text-base md:text-xl font-bold text-slate-300">76%</div>
                 <div className="flex-1 space-y-4 text-xs md:text-sm text-slate-400 font-bold">
-                  <div className="flex justify-between"><span>{t.rsrc}</span><span className="text-slate-200">76%</span></div>
-                  <div className="flex justify-between"><span>{t.energy}</span><span className="text-slate-200">82%</span></div>
+                  <div className="flex justify-between"><span>{t.rsrc}</span><span className="text-slate-300">76%</span></div>
+                  <div className="flex justify-between"><span>{t.energy}</span><span className="text-slate-300">82%</span></div>
                 </div>
              </div>
           </Panel>
           <Panel title={t.quick_access} className="flex-shrink-0">
             {isTargeting ? (
-              <div className="flex flex-col gap-3 p-2">
-                <div className="text-sm text-slate-400 font-bold flex justify-between items-center mb-1"><span>{t.target_input}</span> <X size={20} className="cursor-pointer text-slate-600 hover:text-white" onClick={()=>setIsTargeting(false)}/></div>
+              <div className="flex flex-col gap-4 p-3">
+                <div className="text-sm text-slate-400 font-bold flex justify-between items-center mb-1"><span>{t.target_input}</span> <X size={20} className="cursor-pointer text-slate-500 hover:text-white" onClick={()=>setIsTargeting(false)}/></div>
                 <input type="text" value={targetCode} onChange={e=>setTargetCode(e.target.value)} placeholder="ONC-XXXX" className="bg-[#0a0d14] border border-slate-700 p-4 text-base text-slate-100 outline-none uppercase font-bold text-center focus:border-[#7a2f3a]"/>
                 <button onClick={handleTargetSearch} className="bg-[#11141c] border border-slate-600 text-slate-200 text-sm font-bold p-4 hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">{t.target_btn}</button>
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-2 md:gap-3">
-                 <button onClick={handleScanRefresh} className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-800 hover:bg-[#11141c] text-slate-400 hover:text-slate-200 text-[11px] whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><RefreshCw size={18}/>{t.scan}</button>
-                 <button onClick={() => setIsTargeting(true)} className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-800 hover:bg-[#11141c] text-slate-400 hover:text-slate-200 text-[11px] whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><Search size={18}/>{t.target}</button>
-                 <button onClick={() => setIsInjectModalOpen(true)} className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-700 bg-[#11141c] hover:border-[#7a2f3a] text-slate-300 hover:text-[#7a2f3a] text-[11px] whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><Code size={18}/>{t.inject}</button>
+                 <button onClick={handleScanRefresh} className="flex flex-col items-center justify-center gap-3 p-4 border border-slate-800 hover:bg-[#11141c] text-slate-400 hover:text-slate-200 text-[11px] md:text-xs font-bold whitespace-nowrap cursor-pointer shadow-sm"><RefreshCw size={20}/>{t.scan}</button>
+                 <button onClick={() => setIsTargeting(true)} className="flex flex-col items-center justify-center gap-3 p-4 border border-slate-800 hover:bg-[#11141c] text-slate-400 hover:text-slate-200 text-[11px] md:text-xs font-bold whitespace-nowrap cursor-pointer shadow-sm"><Search size={20}/>{t.target}</button>
+                 <button onClick={() => setIsInjectModalOpen(true)} className="flex flex-col items-center justify-center gap-3 p-4 border border-slate-700 bg-[#11141c] hover:border-[#7a2f3a] text-slate-300 hover:text-[#7a2f3a] text-[11px] md:text-xs font-bold whitespace-nowrap cursor-pointer shadow-sm"><Code size={20}/>{t.inject}</button>
               </div>
             )}
           </Panel>
         </aside>
       </main>
 
-      <footer className="relative z-20 hidden lg:flex justify-between items-center pt-4 border-t border-slate-800 shrink-0 text-sm tracking-widest text-slate-600 font-bold mt-4">
-        <button onClick={onLogout} className="flex items-center gap-3 text-slate-400 hover:text-white border border-slate-700 px-6 py-3 bg-[#0c1017] cursor-pointer"><Power size={16}/> {t.disconnect}</button>
+      <footer className="relative z-20 hidden lg:flex justify-between items-center pt-5 border-t border-slate-800 shrink-0 text-sm tracking-widest text-slate-500 font-bold mt-4">
+        <button onClick={onLogout} className="flex items-center gap-3 text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-6 py-3 bg-[#0c1017] cursor-pointer transition-colors"><Power size={16}/> {t.disconnect}</button>
         <div className="flex gap-20">
           <div><div className="mb-1 text-xs text-slate-600">{t.mode}</div><div className="text-slate-300">COMMAND</div></div>
           <div><div className="mb-1 text-xs text-slate-600">{t.operator}</div><div className="text-[#9e3f4d] uppercase">{currentUser?.codename}</div></div>
