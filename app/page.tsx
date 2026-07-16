@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Crosshair, X, Terminal, Cpu, Zap, Wifi, Shield, 
@@ -190,6 +190,15 @@ const useScrambleText = (text: string) => {
   return d;
 };
 
+const formatDateTime = (iso?: string) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+
 // ==========================================
 // 3. 门禁系统 (Gatekeeper)
 // ==========================================
@@ -372,6 +381,15 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
   const [passkeyInput, setPasskeyInput] = useState("");
   const [passError, setPassError] = useState(false);
   const [step, setStep] = useState<"preview" | "auth" | "read">("preview");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 140) + "px";
+    }
+  }, [input]);
+
 
   const isAuthor = signal.author_id ? currentUser?.id === signal.author_id : currentUser?.codename === signal.author_codename;
 
@@ -412,9 +430,12 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
                 <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
              </div>
           </div>
-          <div className="text-xl md:text-2xl font-bold text-slate-100 mb-4 truncate">{signal.title || "UNTITLED_RECORD"}</div>
+          <div className="flex justify-between items-baseline gap-3 mb-4">
+          <div className="text-xl md:text-2xl font-bold text-slate-100 truncate">{signal.title || "UNTITLED_RECORD"}</div>
+           {signal.created_at && <span className="text-xs text-slate-500 shrink-0">{formatDateTime(signal.created_at)}</span>}
+          </div>
           <div className="text-sm text-slate-400 mb-8 italic border-l-4 border-slate-700 pl-4 bg-[#11141c] p-4 rounded-sm leading-relaxed">
-            "{signal.text.substring(0, 50)}{signal.text.length > 50 ? "..." : ""}"
+           "{signal.text.substring(0, 50)}{signal.text.length > 50 ? "..." : ""}"
           </div>
           <div className="flex items-center justify-between mt-auto pt-5 border-t border-slate-700">
             <span className="text-xs font-bold text-slate-400 flex items-center gap-2">{signal.passkey ? <><Lock size={14} className="text-[#7a2f3a]"/> ENCRYPTED</> : <><Unlock size={14}/> PUBLIC</>}</span>
@@ -454,31 +475,45 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
     </div>
     <div className="flex-1 flex flex-col overflow-hidden min-h-0">
       <div className="flex-1 min-h-[100px] overflow-y-auto pr-4 custom-scrollbar text-base md:text-lg mb-4 text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
-        <span className="text-sm text-slate-400 block mb-6 border-b border-slate-800/50 pb-3 font-bold">OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
+        <div className="text-sm text-slate-400 flex flex-wrap items-center justify-between gap-2 mb-6 border-b border-slate-800/50 pb-3 font-bold">
+          <span>OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
+          {signal.created_at && <span className="text-slate-500 text-xs">{formatDateTime(signal.created_at)}</span>}
+        </div>
         {dec}
       </div>
-      <div className="max-h-[120px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-4 bg-[#0a0d14]/40 p-4 rounded-sm">
+      <div className="max-h-[160px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-4 bg-[#0a0d14]/40 p-4 rounded-sm">
         {replies.map(r => {
           const isReplyAuthor = r.author_codename === signal.author_codename;
           return (
             <div key={r.id} className="border-b border-slate-800/30 pb-2">
-              &gt; <span className={`${isReplyAuthor ? 'text-[#9e3f4d]' : 'text-slate-300'} font-bold`}>
-                [{r.author_codename}]
-                {isReplyAuthor && <User size={14} className="inline ml-1 mb-0.5"/>}
-              </span>: <span className="text-slate-300 ml-2">{r.text}</span>
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <span>&gt;</span>
+                <span className={`${isReplyAuthor ? 'text-[#9e3f4d]' : 'text-slate-300'} font-bold`}>
+                  [{r.author_codename}]
+                  {isReplyAuthor && <User size={14} className="inline ml-1 mb-0.5"/>}
+                </span>
+                {r.created_at && <span className="text-slate-600 text-[11px]">{formatDateTime(r.created_at)}</span>}
+              </div>
+              <span className="text-slate-300 ml-4 whitespace-pre-wrap break-words">{r.text}</span>
             </div>
           )
         })}
         {replies.length === 0 && <div className="italic text-slate-500 font-bold">{t.no_replies}</div>}
       </div>
-      <form onSubmit={(e) => { e.preventDefault(); handleSendReply(); }} className="flex items-center gap-3 border-t border-slate-700/50 pt-4 shrink-0">
-        <span className="text-slate-400 font-bold text-lg">&gt;</span>
-        <input type="text" value={input} onChange={e=>setInput(e.target.value)} placeholder={t.reply_placeholder} className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text rounded-sm" />
+      <form onSubmit={(e) => { e.preventDefault(); handleSendReply(); }} className="flex flex-col md:flex-row items-stretch md:items-end gap-3 border-t border-slate-700/50 pt-4 shrink-0">
+        <textarea 
+          ref={textareaRef}
+          rows={1}
+          value={input} 
+          onChange={e=>setInput(e.target.value)} 
+          placeholder={t.reply_placeholder} 
+          className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text rounded-sm resize-none overflow-y-auto custom-scrollbar leading-relaxed max-h-[140px]" 
+        />
         <button type="submit" className="shrink-0 px-4 py-3 md:py-4 bg-[#11141c] border border-slate-600 text-slate-300 font-bold text-sm hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">SEND</button>
       </form>
     </div>
   </motion.div>
-      )}
+)}
     </motion.div>
   );
 };
