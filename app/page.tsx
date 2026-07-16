@@ -675,7 +675,7 @@ const NotificationCenter = ({ currentUser, t, onJumpToSignal }: any) => {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="absolute right-0 mt-3 w-[300px] md:w-[360px] max-h-[420px] overflow-y-auto custom-scrollbar bg-[#0c1017] border border-slate-700 shadow-[0_0_50px_rgba(0,0,0,0.9)] z-[9999] font-mono rounded-sm"
+              className="fixed left-1/2 -translate-x-1/2 top-[72px] w-[92vw] max-w-[320px] md:absolute md:left-auto md:top-auto md:translate-x-0 md:right-0 md:mt-3 md:w-[360px] md:max-w-none max-h-[420px] overflow-y-auto custom-scrollbar bg-[#0c1017] border border-slate-700 shadow-[0_0_50px_rgba(0,0,0,0.9)] z-[9999] font-mono rounded-sm"
             >
               <div className="flex justify-between items-center px-4 py-3 border-b border-slate-700/50 sticky top-0 bg-[#0c1017]">
                 <span className="text-slate-300 text-xs font-bold tracking-widest">{t.notif_title}</span>
