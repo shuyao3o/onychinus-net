@@ -29,7 +29,7 @@ const TRANSLATIONS = {
     nominal: "SYSTEM NOMINAL",
     anno_title: "ANNOUNCEMENTS",
     anno_1: "[CALENDAR] Celebrating Sylus's 2nd Anniversary!",
-    anno_2: "[UPDATE] Onychinus Radar v2.0 Online.",
+    anno_2: "[UPDATE] Onychinus Net v2.1 Online. New: Threaded replies (Quote), reply notifications, and timestamped transmissions.",
     my_signals: "MY ARCHIVES",
     radar_active: "Radar active. Signals intercepted.",
     no_records: "> No records found.",
@@ -45,7 +45,7 @@ const TRANSLATIONS = {
     mode: "MODE",
     operator: "OPERATOR",
     encrypt_check: "Enable End-to-End Encryption",
-    pass_placeholder: "6-digit passcode",
+    pass_placeholder: "6-8 digit passcode",
     inject_btn: "[ EXECUTE INJECTION ]",
     uploading: "UPLOADING PACKETS...",
     secure: "TRANSMISSION SECURE.",
@@ -57,7 +57,9 @@ const TRANSLATIONS = {
     no_notifs: "> No new notifications.",
     replied_to_you: "replied to your post",
     quoted_you: "quoted your reply",
-    mark_all_read: "MARK ALL READ"
+    mark_all_read: "MARK ALL READ",
+    tab_posted: "POSTED",
+    tab_replied: "REPLIED" 
   },
   zh: {
     gatekeeper_title: "ONYCHINUS 底层访问协议",
@@ -76,7 +78,7 @@ const TRANSLATIONS = {
     nominal: "各项指标正常",
     anno_title: "暗网公告",
     anno_1: "[日历] 庆祝秦彻上线二周年！",
-    anno_2: "[系统] 雷达拦截终端 v2.0 现已上线。包含端到端加密与定向追踪功能。",
+    anno_2: "[系统] 暗网终端 v2.1 现已上线。新增：回帖引用、消息回复提醒、发帖与回帖时间戳显示。",
     my_signals: "我的传输档案",
     radar_active: "雷达运转中。已拦截频段。",
     no_records: "> 尚未上传任何通讯记录。",
@@ -92,7 +94,7 @@ const TRANSLATIONS = {
     mode: "当前模式",
     operator: "操作员",
     encrypt_check: "启用高级端到端加密",
-    pass_placeholder: "设置 6 位数字密码",
+    pass_placeholder: "设置 6-8 位数字密码",
     inject_btn: "[ 执行数据注入 ]",
     uploading: "正在上传并加密数据包...",
     secure: "数据已安全汇入暗网。",
@@ -102,9 +104,11 @@ const TRANSLATIONS = {
     reply_to: "回复至",
     notif_title: "消息提醒",
     no_notifs: "> 暂无新消息。",
-    replied_to_you: "回复了你的帖子",
+    replied_to_you: "回复了你",
     quoted_you: "引用了你的回复",
-    mark_all_read: "全部标为已读"
+    mark_all_read: "全部标为已读",
+    tab_posted: "我发送的",
+    tab_replied: "我回复的"
   }
 };
 
@@ -497,8 +501,8 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
               <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
             </div>
           </div>
-          <div className="flex justify-between items-baseline gap-3 mb-4">
-            <div className="text-xl md:text-2xl font-bold text-slate-100 truncate">{signal.title || "UNTITLED_RECORD"}</div>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-baseline gap-1 md:gap-3 mb-4">
+            <div className="text-xl md:text-2xl font-bold text-slate-100 break-words min-w-0">{signal.title || "UNTITLED_RECORD"}</div>
             {signal.created_at && <span className="text-xs text-slate-500 shrink-0">{formatDateTime(signal.created_at)}</span>}
           </div>
           <div className="text-sm text-slate-400 mb-8 italic border-l-4 border-slate-700 pl-4 bg-[#11141c] p-4 rounded-sm leading-relaxed">
@@ -531,9 +535,9 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
 
       {step === "read" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[90dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
-          <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-center">
-            <span className="text-slate-300 text-sm font-bold tracking-widest truncate max-w-[250px] md:max-w-[400px] drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
-            <div className="flex items-center gap-5">
+          <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-start gap-3">
+            <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
+            <div className="flex items-center gap-5 shrink-0 mt-0.5">
               {isAuthor && <button onClick={handleDelete} className="text-[#802020] hover:text-red-500 font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer"><Trash2 size={14}/> [ PURGE ]</button>}
               <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
             </div>
@@ -720,7 +724,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
 
   const handleInject = async () => {
     if(!text) return;
-    if(isEncrypted && passkey.length !== 6) { alert("6 digits required"); return; }
+    if(isEncrypted && (passkey.length < 6 || passkey.length > 8)) { alert("PASSKEY MUST BE 6-8 DIGITS"); return; }
     setStatus("injecting");
     const accessCode = "ONC-" + Math.random().toString(36).substring(2, 6).toUpperCase();
     const finalTitle = title.trim()||"UNTITLED_RECORD";
@@ -750,7 +754,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
               <label className="flex items-center gap-3 text-sm text-slate-300 font-bold cursor-pointer">
                 <input type="checkbox" checked={isEncrypted} onChange={(e) => setIsEncrypted(e.target.checked)} className="accent-[#7a2f3a] w-5 h-5 cursor-pointer" /> {t.encrypt_check}
               </label>
-              {isEncrypted && <input type="text" maxLength={6} placeholder={t.pass_placeholder} value={passkey} onChange={e=>setPasskey(e.target.value.replace(/[^0-9]/g, ''))} className="w-full md:w-40 bg-[#0a0d14] border border-slate-600 p-3 text-center text-base text-[#9e3f4d] tracking-[0.2em] font-bold outline-none focus:border-[#7a2f3a] cursor-text" />}
+              {isEncrypted && <input type="text" maxLength={8} placeholder={t.pass_placeholder} value={passkey} onChange={e=>setPasskey(e.target.value.replace(/[^0-9]/g, ''))} className="w-full md:w-40 bg-[#0a0d14] border border-slate-600 p-3 text-center text-base text-[#9e3f4d] tracking-[0.2em] font-bold outline-none focus:border-[#7a2f3a] cursor-text" />}
             </div>
             <button onClick={handleInject} className="py-5 px-12 bg-[#11141c] border-2 border-slate-600 text-slate-200 text-base font-bold hover:border-[#7a2f3a] hover:bg-[#1a0f12] hover:text-[#7a2f3a] transition-all w-full md:w-auto cursor-pointer">
               {t.inject_btn}
@@ -783,6 +787,8 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
   const t = TRANSLATIONS[lang as keyof typeof TRANSLATIONS];
   const [cloudPool, setCloudPool] = useState<any[]>([]);
   const [displaySignals, setDisplaySignals] = useState<any[]>([]);
+  const [repliedSignals, setRepliedSignals] = useState<any[]>([]);
+  const [archiveTab, setArchiveTab] = useState<"posted" | "replied">("posted");
   const [activeSignal, setActiveSignal] = useState<any>(null);
   const [highlightReplyId, setHighlightReplyId] = useState<string | null>(null);  // 新增
   const [notifSignalCache, setNotifSignalCache] = useState<Record<string, any>>({});  // 新增
@@ -803,6 +809,25 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
       setCloudPool(combinedPool); shuffleAndDisplay(combinedPool); 
     }
   };
+
+  const fetchRepliedSignals = async () => {
+  if (!currentUser?.id) return;
+  // 1. 先查出这个人所有回复过的帖子 id（去重）
+  const { data: myReplies } = await supabase
+    .from("replies")
+    .select("signal_id")
+    .eq("author_id", currentUser.id)
+    .order("created_at", { ascending: false });
+  if (!myReplies || myReplies.length === 0) { setRepliedSignals([]); return; }
+  const uniqueIds = Array.from(new Set(myReplies.map((r: any) => r.signal_id)));
+  // 2. 再拿这些 id 去 signals 表里查出对应帖子详情
+  const { data: sigs } = await supabase.from("signals").select("*").in("id", uniqueIds);
+  if (sigs) {
+    // 按照最近回复的顺序排列，而不是按帖子创建时间
+    const ordered = uniqueIds.map(id => sigs.find((s: any) => s.id === id)).filter(Boolean);
+    setRepliedSignals(ordered);
+  }
+};
 
   const handleJumpToSignal = async (signalId: string, replyId: string | null) => {
   // 先看本地缓存池里有没有这条帖子
@@ -828,7 +853,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
     setTimeout(() => { shuffleAndDisplay(cloudPool); setIsScanning(false); }, 1000); 
   };
 
-  useEffect(() => { fetchSignals(); }, []);
+  useEffect(() => { fetchRepliedSignals(); }, [currentUser?.id]);
   
   useEffect(() => { 
   const timer = setInterval(() => { 
@@ -869,7 +894,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,#12161f_0%,#0a0d14_100%)] z-0 pointer-events-none"></div>
       <div className="fixed inset-0 z-[1] scanline opacity-20 pointer-events-none"></div>
 
-      <header className="relative z-20 flex flex-col md:flex-row justify-between md:items-end pb-4 border-b border-slate-700 mb-4 lg:mb-5 gap-4">
+      <header className="relative z-30 flex flex-col md:flex-row justify-between md:items-end pb-4 border-b border-slate-700 mb-4 lg:mb-5 gap-4">
         <div className="flex items-baseline gap-4 md:gap-6">
           <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] text-slate-100">ONYCHINUS<span className="text-[#7a2f3a] text-xl md:text-2xl ml-3">2.0</span></h1>
         </div>
@@ -901,19 +926,24 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
             <div className="mt-5 flex items-center gap-3 text-sm text-slate-300 font-bold"><div className="w-3 h-3 bg-slate-300 animate-pulse rounded-full"></div>{t.nominal}</div>
           </Panel>
           
-          <Panel title={t.my_signals} className="flex-1 min-h-[180px]">
-             <div className="overflow-y-auto h-full pr-3 custom-scrollbar space-y-3">
-                {mySignals.length > 0 ? mySignals.map(sig => (
-                   <div key={sig.id} onClick={() => setActiveSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-3 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors flex flex-col justify-center">
+          <Panel title={t.my_signals} className="flex-1 min-h-[220px] flex flex-col">
+            <div className="flex gap-2 mb-3 shrink-0">
+                <button onClick={() => setArchiveTab("posted")} className={`flex-1 text-xs font-bold py-2 border tracking-wider cursor-pointer transition-colors ${archiveTab === "posted" ? "bg-[#7a2f3a] border-[#7a2f3a] text-white" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}>{t.tab_posted}</button>
+                <button onClick={() => setArchiveTab("replied")} className={`flex-1 text-xs font-bold py-2 border tracking-wider cursor-pointer transition-colors ${archiveTab === "replied" ? "bg-[#7a2f3a] border-[#7a2f3a] text-white" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}>{t.tab_replied}</button>
+            </div>
+            <div className="overflow-y-auto flex-1 pr-3 custom-scrollbar space-y-3">
+                {(archiveTab === "posted" ? mySignals : repliedSignals).length > 0 ? (archiveTab === "posted" ? mySignals : repliedSignals).map(sig => (
+                  <div key={sig.id} onClick={() => setActiveSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-3 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors flex flex-col justify-center">
                       <div className="text-sm text-slate-200 font-bold truncate">{sig.title || "UNTITLED"}</div>
                       <div className="text-xs text-slate-500 mt-2 flex justify-between font-bold">
                         <span>{sig.access_code || `SIG-${sig.id.substring(0,4).toUpperCase()}`}</span>
                         {sig.passkey && <Lock size={14} className="text-[#9e3f4d]"/>}
                       </div>
-                   </div>
+                  </div>
                 )) : <div className="text-sm text-slate-500 font-bold mt-2">{t.no_records}</div>}
-             </div>
+            </div>
           </Panel>
+
         </aside>
 
         <section className="flex-1 flex items-center justify-center relative border border-slate-700/60 bg-[#0c1017]/40 p-4 lg:p-0 min-h-[400px] overflow-hidden shadow-[inset_0_0_80px_rgba(0,0,0,0.6)]">
