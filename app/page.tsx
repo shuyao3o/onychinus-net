@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Crosshair, X, Terminal, Cpu, Zap, Wifi, Shield, 
-Activity, Radio as RadioIcon, Code, Lock, Unlock, Eye, EyeOff, Search, KeyRound, Power, RefreshCw, FileText, User, Bell, Trash2, Reply
+  Activity, Radio as RadioIcon, Code, Lock, Unlock, Eye, EyeOff, Search, KeyRound, Power, RefreshCw, FileText, User, Bell, Trash2
 } from "lucide-react";
 import { supabase } from "@/utils/supabase";
 
@@ -29,7 +29,7 @@ const TRANSLATIONS = {
     nominal: "SYSTEM NOMINAL",
     anno_title: "ANNOUNCEMENTS",
     anno_1: "[CALENDAR] Celebrating Sylus's 2nd Anniversary!",
-    anno_2: "[UPDATE] Onychinus Net v2.1 Online. New: Threaded replies (Quote), reply notifications, and timestamped transmissions.",
+    anno_2: "[UPDATE] Onychinus Radar v2.0 Online.",
     my_signals: "MY ARCHIVES",
     radar_active: "Radar active. Signals intercepted.",
     no_records: "> No records found.",
@@ -45,21 +45,13 @@ const TRANSLATIONS = {
     mode: "MODE",
     operator: "OPERATOR",
     encrypt_check: "Enable End-to-End Encryption",
-    pass_placeholder: "6-8 digit passcode",
+    pass_placeholder: "6-digit passcode",
     inject_btn: "[ EXECUTE INJECTION ]",
     uploading: "UPLOADING PACKETS...",
     secure: "TRANSMISSION SECURE.",
     decrypt_btn: "[ DECRYPT RECORD ]",
     reply_placeholder: "TYPE REPLY...",
-    no_replies: "> No response protocols found.",
-    reply_to: "REPLYING TO",
-    notif_title: "NOTIFICATIONS",
-    no_notifs: "> No new notifications.",
-    replied_to_you: "replied to your post",
-    quoted_you: "quoted your reply",
-    mark_all_read: "MARK ALL READ",
-    tab_posted: "POSTED",
-    tab_replied: "REPLIED" 
+    no_replies: "> No response protocols found."
   },
   zh: {
     gatekeeper_title: "ONYCHINUS 底层访问协议",
@@ -78,7 +70,7 @@ const TRANSLATIONS = {
     nominal: "各项指标正常",
     anno_title: "暗网公告",
     anno_1: "[日历] 庆祝秦彻上线二周年！",
-    anno_2: "[系统] 暗网终端 v2.1 现已上线。新增：回帖引用、消息回复提醒、发帖与回帖时间戳显示。",
+    anno_2: "[系统] 雷达拦截终端 v2.0 现已上线。包含端到端加密与定向追踪功能。",
     my_signals: "我的传输档案",
     radar_active: "雷达运转中。已拦截频段。",
     no_records: "> 尚未上传任何通讯记录。",
@@ -94,21 +86,13 @@ const TRANSLATIONS = {
     mode: "当前模式",
     operator: "操作员",
     encrypt_check: "启用高级端到端加密",
-    pass_placeholder: "设置 6-8 位数字密码",
+    pass_placeholder: "设置 6 位数字密码",
     inject_btn: "[ 执行数据注入 ]",
     uploading: "正在上传并加密数据包...",
     secure: "数据已安全汇入暗网。",
     decrypt_btn: "[ 破解加密档案 ]",
     reply_placeholder: "输入回复...",
-    no_replies: "> 暂无任何响应协议。",
-    reply_to: "回复至",
-    notif_title: "消息提醒",
-    no_notifs: "> 暂无新消息。",
-    replied_to_you: "回复了你",
-    quoted_you: "引用了你的回复",
-    mark_all_read: "全部标为已读",
-    tab_posted: "我发送的",
-    tab_replied: "我回复的"
+    no_replies: "> 暂无任何响应协议。"
   }
 };
 
@@ -205,15 +189,6 @@ const useScrambleText = (text: string) => {
   }, [text]);
   return d;
 };
-
-const formatDateTime = (iso?: string) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-
 
 // ==========================================
 // 3. 门禁系统 (Gatekeeper)
@@ -390,104 +365,40 @@ setTimeout(() => onLoginSuccess(profile), 2000);
 // ==========================================
 // 5. 弹窗与交互模块 (解密阅读弹窗)
 // ==========================================
-const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightReplyId, onConsumeHighlight }: any) => {
+const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t }: any) => {
   const dec = useScrambleText(signal.text);
   const [replies, setReplies] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [passkeyInput, setPasskeyInput] = useState("");
   const [passError, setPassError] = useState(false);
   const [step, setStep] = useState<"preview" | "auth" | "read">("preview");
-  const [replyTarget, setReplyTarget] = useState<any>(null);
-  const [flashId, setFlashId] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const replyRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 140) + "px";
-    }
-  }, [input]);
 
   const isAuthor = signal.author_id ? currentUser?.id === signal.author_id : currentUser?.codename === signal.author_codename;
 
   const fetchR = async () => { 
     const { data } = await supabase.from("replies").select("*").eq("signal_id", signal.id).order("created_at"); 
-    if (data) setReplies(data); 
+    if(data) setReplies(data); 
   };
-
+  
   useEffect(() => { if (step === "read") fetchR(); }, [signal.id, step]);
 
-  useEffect(() => {
-    if (step === "read" && highlightReplyId && replies.length > 0) {
-      const el = replyRefs.current[highlightReplyId];
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        setFlashId(highlightReplyId);
-        const timer = setTimeout(() => setFlashId(null), 2500);
-        onConsumeHighlight && onConsumeHighlight();
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [step, highlightReplyId, replies]);
-
-  const findFloor = (replyId: string) => {
-    const idx = replies.findIndex(r => r.id === replyId);
-    return idx >= 0 ? idx + 1 : null;
-  };
-
   const handleSendReply = async () => {
-    if (!input.trim()) return;
-    const payload: any = {
-      signal_id: signal.id,
-      text: input,
-      author_codename: currentUser?.codename || "UNKNOWN",
-      author_id: currentUser?.id || null
-    };
-    if (replyTarget) {
-      payload.reply_to_id = replyTarget.id;
-      payload.reply_to_author = replyTarget.author_codename;
-      payload.reply_to_snippet = replyTarget.snippet;
-    }
-    const { data: inserted, error } = await supabase.from("replies").insert(payload).select().single();
-    if (!error) {
-      const recipientId = replyTarget ? replyTarget.author_id : signal.author_id;
-      if (recipientId && recipientId !== currentUser?.id) {
-        await supabase.from("notifications").insert({
-          recipient_id: recipientId,
-          actor_codename: currentUser?.codename || "UNKNOWN",
-          signal_id: signal.id,
-          reply_id: inserted?.id || null,
-          signal_title: signal.title || "UNTITLED_RECORD",
-          snippet: input.substring(0, 60),
-        });
-      }
-      setInput("");
-      setReplyTarget(null);
-      fetchR();
-    }
-  };
+  if (!input.trim()) return;
+  await supabase.from("replies").insert({ signal_id: signal.id, text: input, author_codename: currentUser?.codename || "UNKNOWN", author_id: currentUser?.id || null });
+  setInput(""); 
+  fetchR();
+};
+
 
   const handleDecryptClick = () => { if (signal.passkey) setStep("auth"); else setStep("read"); };
   const handleUnlock = () => { if (passkeyInput === signal.passkey) { setStep("read"); setPassError(false); } else { setPassError(true); setPasskeyInput(""); } };
 
   const handleDelete = async () => {
     if (confirm("DANGER: 您确定要从暗网彻底销毁该通讯记录吗？此操作不可逆。")) {
-      await supabase.from("signals").delete().eq("id", signal.id);
-      onRefresh();
-      onClose();
+       await supabase.from("signals").delete().eq("id", signal.id);
+       onRefresh();
+       onClose();
     }
-  };
-
-  const startQuote = (r: any, floor: number) => {
-    setReplyTarget({
-      id: r.id,
-      floor,
-      author_codename: r.author_codename,
-      author_id: r.author_id,
-      snippet: r.text.substring(0, 60)
-    });
-    setTimeout(() => textareaRef.current?.focus(), 100);
   };
 
   return (
@@ -495,225 +406,82 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
       {step === "preview" && (
         <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="relative w-full max-w-[450px] bg-[#0c1017] border border-slate-600 shadow-[0_0_50px_rgba(0,0,0,0.9)] p-8 font-mono text-slate-200 flex flex-col">
           <div className="flex justify-between border-b border-slate-700 pb-4 mb-6 items-center">
-            <span className="text-slate-400 text-sm font-bold tracking-widest">[ SIGNAL_INTERCEPTED ]</span>
-            <div className="flex items-center gap-4">
-              {isAuthor && <button onClick={handleDelete} className="text-[#802020] hover:text-red-500 font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer"><Trash2 size={14}/> [ PURGE ]</button>}
-              <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
-            </div>
+             <span className="text-slate-400 text-sm font-bold tracking-widest">[ SIGNAL_INTERCEPTED ]</span>
+             <div className="flex items-center gap-4">
+                {isAuthor && <button onClick={handleDelete} className="text-[#802020] hover:text-red-500 font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer"><Trash2 size={14}/> [ PURGE ]</button>}
+                <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
+             </div>
           </div>
-          <div className="flex flex-col md:flex-row md:justify-between md:items-baseline gap-1 md:gap-3 mb-4">
-            <div className="text-xl md:text-2xl font-bold text-slate-100 break-words min-w-0">{signal.title || "UNTITLED_RECORD"}</div>
-            {signal.created_at && <span className="text-xs text-slate-500 shrink-0">{formatDateTime(signal.created_at)}</span>}
-          </div>
+          <div className="text-xl md:text-2xl font-bold text-slate-100 mb-4 truncate">{signal.title || "UNTITLED_RECORD"}</div>
           <div className="text-sm text-slate-400 mb-8 italic border-l-4 border-slate-700 pl-4 bg-[#11141c] p-4 rounded-sm leading-relaxed">
             "{signal.text.substring(0, 50)}{signal.text.length > 50 ? "..." : ""}"
           </div>
-          <button onClick={handleDecryptClick} className="w-full bg-[#1a1d24] hover:bg-[#22262e] border border-slate-600 hover:border-[#7a2f3a] text-slate-200 font-bold py-4 flex items-center justify-center gap-2 cursor-pointer transition-colors">
-            {signal.passkey ? <Lock size={18}/> : <Unlock size={18}/>} {t.decrypt_btn}
-          </button>
+          <div className="flex items-center justify-between mt-auto pt-5 border-t border-slate-700">
+            <span className="text-xs font-bold text-slate-400 flex items-center gap-2">{signal.passkey ? <><Lock size={14} className="text-[#7a2f3a]"/> ENCRYPTED</> : <><Unlock size={14}/> PUBLIC</>}</span>
+            <button onClick={handleDecryptClick} className="px-6 py-3 bg-[#11141c] border border-slate-600 text-slate-200 text-sm font-bold hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">
+              {t.decrypt_btn}
+            </button>
+          </div>
         </motion.div>
       )}
 
       {step === "auth" && (
-        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="relative w-full max-w-[450px] bg-[#0c1017] border border-slate-600 shadow-[0_0_50px_rgba(0,0,0,0.9)] p-8 font-mono text-slate-200 flex flex-col">
-          <div className="flex justify-between border-b border-slate-700 pb-4 mb-6 items-center">
-            <span className="text-slate-400 text-sm font-bold tracking-widest">[ ENCRYPTED ]</span>
-            <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
+        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="relative w-full max-w-[400px] bg-[#0c1017] border border-[#7a2f3a] shadow-[0_0_60px_rgba(122,47,58,0.2)] p-8 font-mono text-slate-200 flex flex-col">
+          <div className="flex justify-between border-b border-slate-700 pb-4 mb-6">
+             <span className="text-[#7a2f3a] text-sm font-bold tracking-widest">[ ENCRYPTION DETECTED ]</span>
+             <button onClick={onClose} className="hover:text-white cursor-pointer"><X size={20}/></button>
           </div>
-          <div className="text-center mb-6"><KeyRound size={40} className="mx-auto text-[#9e3f4d] mb-4"/></div>
-          <input
-            type="text"
-            value={passkeyInput}
-            onChange={(e) => { setPasskeyInput(e.target.value); setPassError(false); }}
-            placeholder={t.pass_placeholder}
-            className={`w-full bg-[#0a0d14] border p-4 text-center text-xl outline-none tracking-widest font-bold mb-4 ${passError ? "border-red-600 text-red-500" : "border-slate-700 text-slate-100 focus:border-[#7a2f3a]"}`}
-          />
-          {passError && <div className="text-red-500 text-xs text-center mb-4 font-bold">ACCESS DENIED. INVALID KEY.</div>}
-          <button onClick={handleUnlock} className="w-full bg-[#1a1d24] hover:bg-[#22262e] border border-slate-600 hover:border-[#7a2f3a] text-slate-200 font-bold py-4 cursor-pointer transition-colors">UNLOCK</button>
+          <div className="flex-1 flex flex-col items-center justify-center py-8 gap-6">
+            <KeyRound size={48} className="text-[#7a2f3a]" />
+            <div className="text-sm text-[#7a2f3a] font-bold text-center">信号受高级协议保护。<br/>请输入 6 位解密密钥。</div>
+            <input type="password" maxLength={6} value={passkeyInput} onChange={e=>setPasskeyInput(e.target.value.replace(/[^0-9]/g, ''))} placeholder="******" className="mt-4 w-56 bg-[#0a0d14] border border-slate-700 p-4 text-center text-2xl text-[#c75a6c] tracking-[0.5em] outline-none focus:border-[#7a2f3a] font-bold" />
+            {passError && <span className="text-red-500 text-sm font-bold animate-pulse">Error: 无效密钥。</span>}
+            <button onClick={handleUnlock} className="mt-4 px-10 py-3 bg-[#11141c] border border-slate-600 text-sm font-bold hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">
+              [ SUBMIT ]
+            </button>
+          </div>
         </motion.div>
       )}
 
       {step === "read" && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[90dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
-          <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-start gap-3">
-            <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
-            <div className="flex items-center gap-5 shrink-0 mt-0.5">
-              {isAuthor && <button onClick={handleDelete} className="text-[#802020] hover:text-red-500 font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer"><Trash2 size={14}/> [ PURGE ]</button>}
-              <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
+  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[90dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
+    <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-center">
+      <span className="text-slate-300 text-sm font-bold tracking-widest truncate max-w-[250px] md:max-w-[400px] drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
+      <div className="flex items-center gap-5">
+         {isAuthor && <button onClick={handleDelete} className="text-[#802020] hover:text-red-500 font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer"><Trash2 size={14}/> [ PURGE ]</button>}
+         <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
+      </div>
+    </div>
+    <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+      <div className="flex-1 min-h-[100px] overflow-y-auto pr-4 custom-scrollbar text-base md:text-lg mb-4 text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
+        <span className="text-sm text-slate-400 block mb-6 border-b border-slate-800/50 pb-3 font-bold">OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
+        {dec}
+      </div>
+      <div className="max-h-[120px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-4 bg-[#0a0d14]/40 p-4 rounded-sm">
+        {replies.map(r => {
+          const isReplyAuthor = r.author_codename === signal.author_codename;
+          return (
+            <div key={r.id} className="border-b border-slate-800/30 pb-2">
+              &gt; <span className={`${isReplyAuthor ? 'text-[#9e3f4d]' : 'text-slate-300'} font-bold`}>
+                [{r.author_codename}]
+                {isReplyAuthor && <User size={14} className="inline ml-1 mb-0.5"/>}
+              </span>: <span className="text-slate-300 ml-2">{r.text}</span>
             </div>
-          </div>
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-            <div className="flex-1 min-h-[100px] overflow-y-auto pr-4 custom-scrollbar text-base md:text-lg mb-4 text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
-              <div className="text-sm text-slate-400 flex flex-wrap items-center justify-between gap-2 mb-6 border-b border-slate-800/50 pb-3 font-bold">
-                <span>OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
-                {signal.created_at && <span className="text-slate-500 text-xs">{formatDateTime(signal.created_at)}</span>}
-              </div>
-              {dec}
-            </div>
-
-            <div className="max-h-[200px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-4 bg-[#0a0d14]/40 p-4 rounded-sm">
-              {replies.map((r, idx) => {
-                const isReplyAuthor = r.author_codename === signal.author_codename;
-                const floor = idx + 1;
-                const quotedFloor = r.reply_to_id ? findFloor(r.reply_to_id) : null;
-                const isFlash = flashId === r.id;
-                return (
-                  <div
-                    key={r.id}
-                    ref={(el) => { replyRefs.current[r.id] = el; }}
-                    className={`border-b border-slate-800/30 pb-2 rounded-sm transition-colors duration-500 ${isFlash ? "bg-[#7a2f3a]/30 ring-1 ring-[#9e3f4d]" : ""}`}
-                  >
-                    <div className="flex flex-wrap items-baseline gap-x-2">
-                      <span className="text-slate-600">#{floor}</span>
-                      <span>&gt;</span>
-                      <span className={`${isReplyAuthor ? 'text-[#9e3f4d]' : 'text-slate-300'} font-bold`}>
-                        [{r.author_codename}]
-                        {isReplyAuthor && <User size={14} className="inline ml-1 mb-0.5"/>}
-                      </span>
-                      {r.created_at && <span className="text-slate-600 text-[11px]">{formatDateTime(r.created_at)}</span>}
-                      <button onClick={() => startQuote(r, floor)} className="ml-auto text-slate-500 hover:text-[#9e3f4d] cursor-pointer flex items-center gap-1 text-[11px]">
-                        <Reply size={12}/> QUOTE
-                      </button>
-                    </div>
-                    {r.reply_to_id && (
-                      <div className="ml-4 mt-1 mb-1 text-[11px] text-slate-500 border-l-2 border-slate-700 pl-2 italic truncate">
-                        @{r.reply_to_author}{quotedFloor ? ` #${quotedFloor}` : ""}: "{r.reply_to_snippet}"
-                      </div>
-                    )}
-                    <span className="text-slate-300 ml-4 whitespace-pre-wrap break-words">{r.text}</span>
-                  </div>
-                );
-              })}
-              {replies.length === 0 && <div className="italic text-slate-500 font-bold">{t.no_replies}</div>}
-            </div>
-
-            {replyTarget && (
-              <div className="flex items-center justify-between bg-[#11141c] border border-slate-700/60 px-3 py-2 mb-2 text-xs text-slate-400 rounded-sm">
-                <span className="truncate">{t.reply_to} #{replyTarget.floor} <span className="text-[#9e3f4d] font-bold">[{replyTarget.author_codename}]</span>: "{replyTarget.snippet}"</span>
-                <button onClick={() => setReplyTarget(null)} className="ml-3 shrink-0 text-slate-500 hover:text-white cursor-pointer"><X size={14}/></button>
-              </div>
-            )}
-
-            <form onSubmit={(e) => { e.preventDefault(); handleSendReply(); }} className="flex flex-col md:flex-row items-stretch md:items-end gap-3 border-t border-slate-700/50 pt-4 shrink-0">
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={t.reply_placeholder}
-                className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text rounded-sm resize-none overflow-y-auto custom-scrollbar leading-relaxed max-h-[140px]"
-              />
-              <button type="submit" className="shrink-0 px-4 py-3 md:py-4 bg-[#11141c] border border-slate-600 text-slate-300 font-bold text-sm hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">SEND</button>
-            </form>
-          </div>
-        </motion.div>
+          )
+        })}
+        {replies.length === 0 && <div className="italic text-slate-500 font-bold">{t.no_replies}</div>}
+      </div>
+      <form onSubmit={(e) => { e.preventDefault(); handleSendReply(); }} className="flex items-center gap-3 border-t border-slate-700/50 pt-4 shrink-0">
+        <span className="text-slate-400 font-bold text-lg">&gt;</span>
+        <input type="text" value={input} onChange={e=>setInput(e.target.value)} placeholder={t.reply_placeholder} className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text rounded-sm" />
+        <button type="submit" className="shrink-0 px-4 py-3 md:py-4 bg-[#11141c] border border-slate-600 text-slate-300 font-bold text-sm hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">SEND</button>
+      </form>
+    </div>
+  </motion.div>
       )}
     </motion.div>
   );
 };
-
-const NotificationCenter = ({ currentUser, t, onJumpToSignal }: any) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [notifs, setNotifs] = useState<any[]>([]);
-
-  const fetchNotifs = async () => {
-    if (!currentUser?.id) return;
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("recipient_id", currentUser.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (data) setNotifs(data);
-  };
-
-  useEffect(() => {
-    fetchNotifs();
-    if (!currentUser?.id) return;
-    const channel = supabase
-      .channel(`notifs-${currentUser.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `recipient_id=eq.${currentUser.id}` }, () => {
-        fetchNotifs();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [currentUser?.id]);
-
-  const unreadCount = notifs.filter(n => !n.is_read).length;
-
-  const markAllRead = async () => {
-    if (!currentUser?.id || unreadCount === 0) return;
-    await supabase.from("notifications").update({ is_read: true }).eq("recipient_id", currentUser.id).eq("is_read", false);
-    fetchNotifs();
-  };
-
-  const handleClickNotif = async (n: any) => {
-    if (!n.is_read) {
-      await supabase.from("notifications").update({ is_read: true }).eq("id", n.id);
-      fetchNotifs();
-    }
-    setIsOpen(false);
-    onJumpToSignal(n.signal_id, n.reply_id);
-  };
-
-  return (
-    <div className="relative">
-      <button onClick={() => setIsOpen(v => !v)} className="relative cursor-pointer text-slate-400 hover:text-white transition-colors">
-        <Bell size={20} />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 bg-[#9e3f4d] text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        )}
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="absolute right-0 mt-3 w-[300px] md:w-[360px] max-h-[420px] overflow-y-auto custom-scrollbar bg-[#0c1017] border border-slate-700 shadow-[0_0_50px_rgba(0,0,0,0.9)] z-[9999] font-mono rounded-sm"
-            >
-              <div className="flex justify-between items-center px-4 py-3 border-b border-slate-700/50 sticky top-0 bg-[#0c1017]">
-                <span className="text-slate-300 text-xs font-bold tracking-widest">{t.notif_title}</span>
-                {unreadCount > 0 && (
-                  <button onClick={markAllRead} className="text-[10px] text-slate-500 hover:text-[#9e3f4d] font-bold cursor-pointer">{t.mark_all_read}</button>
-                )}
-              </div>
-              <div className="divide-y divide-slate-800/50">
-                {notifs.length === 0 && (
-                  <div className="p-6 text-center text-slate-500 text-xs italic">{t.no_notifs}</div>
-                )}
-                {notifs.map(n => (
-                  <button
-                    key={n.id}
-                    onClick={() => handleClickNotif(n)}
-                    className={`w-full text-left px-4 py-3 hover:bg-[#161a22] cursor-pointer transition-colors ${!n.is_read ? "bg-[#161a22]/60" : ""}`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      {!n.is_read && <span className="w-1.5 h-1.5 rounded-full bg-[#9e3f4d] shrink-0" />}
-                      <span className="text-[#9e3f4d] text-xs font-bold truncate">[{n.actor_codename}]</span>
-                      <span className="text-slate-500 text-[11px] shrink-0">{n.reply_id ? t.quoted_you : t.replied_to_you}</span>
-                    </div>
-                    <div className="text-slate-400 text-xs truncate mb-1">"{n.snippet}"</div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-600 text-[10px] truncate">{n.signal_title}</span>
-                      <span className="text-slate-600 text-[10px] shrink-0 ml-2">{formatDateTime(n.created_at)}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
 const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
@@ -724,7 +492,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
 
   const handleInject = async () => {
     if(!text) return;
-    if(isEncrypted && (passkey.length < 6 || passkey.length > 8)) { alert("PASSKEY MUST BE 6-8 DIGITS"); return; }
+    if(isEncrypted && passkey.length !== 6) { alert("6 digits required"); return; }
     setStatus("injecting");
     const accessCode = "ONC-" + Math.random().toString(36).substring(2, 6).toUpperCase();
     const finalTitle = title.trim()||"UNTITLED_RECORD";
@@ -754,7 +522,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
               <label className="flex items-center gap-3 text-sm text-slate-300 font-bold cursor-pointer">
                 <input type="checkbox" checked={isEncrypted} onChange={(e) => setIsEncrypted(e.target.checked)} className="accent-[#7a2f3a] w-5 h-5 cursor-pointer" /> {t.encrypt_check}
               </label>
-              {isEncrypted && <input type="text" maxLength={8} placeholder={t.pass_placeholder} value={passkey} onChange={e=>setPasskey(e.target.value.replace(/[^0-9]/g, ''))} className="w-full md:w-40 bg-[#0a0d14] border border-slate-600 p-3 text-center text-base text-[#9e3f4d] tracking-[0.2em] font-bold outline-none focus:border-[#7a2f3a] cursor-text" />}
+              {isEncrypted && <input type="text" maxLength={6} placeholder={t.pass_placeholder} value={passkey} onChange={e=>setPasskey(e.target.value.replace(/[^0-9]/g, ''))} className="w-full md:w-40 bg-[#0a0d14] border border-slate-600 p-3 text-center text-base text-[#9e3f4d] tracking-[0.2em] font-bold outline-none focus:border-[#7a2f3a] cursor-text" />}
             </div>
             <button onClick={handleInject} className="py-5 px-12 bg-[#11141c] border-2 border-slate-600 text-slate-200 text-base font-bold hover:border-[#7a2f3a] hover:bg-[#1a0f12] hover:text-[#7a2f3a] transition-all w-full md:w-auto cursor-pointer">
               {t.inject_btn}
@@ -787,11 +555,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
   const t = TRANSLATIONS[lang as keyof typeof TRANSLATIONS];
   const [cloudPool, setCloudPool] = useState<any[]>([]);
   const [displaySignals, setDisplaySignals] = useState<any[]>([]);
-  const [repliedSignals, setRepliedSignals] = useState<any[]>([]);
-  const [archiveTab, setArchiveTab] = useState<"posted" | "replied">("posted");
   const [activeSignal, setActiveSignal] = useState<any>(null);
-  const [highlightReplyId, setHighlightReplyId] = useState<string | null>(null);  // 新增
-  const [notifSignalCache, setNotifSignalCache] = useState<Record<string, any>>({});  // 新增
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
   const [isInjectModalOpen, setIsInjectModalOpen] = useState(false);
@@ -810,42 +574,6 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
     }
   };
 
-  const fetchRepliedSignals = async () => {
-  if (!currentUser?.id) return;
-  // 1. 先查出这个人所有回复过的帖子 id（去重）
-  const { data: myReplies } = await supabase
-    .from("replies")
-    .select("signal_id")
-    .eq("author_id", currentUser.id)
-    .order("created_at", { ascending: false });
-  if (!myReplies || myReplies.length === 0) { setRepliedSignals([]); return; }
-  const uniqueIds = Array.from(new Set(myReplies.map((r: any) => r.signal_id)));
-  // 2. 再拿这些 id 去 signals 表里查出对应帖子详情
-  const { data: sigs } = await supabase.from("signals").select("*").in("id", uniqueIds);
-  if (sigs) {
-    // 按照最近回复的顺序排列，而不是按帖子创建时间
-    const ordered = uniqueIds.map(id => sigs.find((s: any) => s.id === id)).filter(Boolean);
-    setRepliedSignals(ordered);
-  }
-};
-
-  const handleJumpToSignal = async (signalId: string, replyId: string | null) => {
-  // 先看本地缓存池里有没有这条帖子
-  let target = cloudPool.find((s: any) => s.id === signalId);
-  // 缓存里没有（比如帖子比较旧，超出了limit加载范围），就单独去数据库查一次
-  if (!target) {
-    const { data } = await supabase.from("signals").select("*").eq("id", signalId).maybeSingle();
-    target = data;
-  }
-  if (target) {
-    setActiveSignal(target);
-    setHighlightReplyId(replyId);
-  } else {
-    alert("> [ERROR] 该帖子可能已被作者删除，无法跳转查看。");
-  }
-};
-
-
   const shuffleAndDisplay = (pool: any[]) => { setDisplaySignals([...pool].sort(() => 0.5 - Math.random()).slice(0, 18)); };
   
   const handleScanRefresh = () => { 
@@ -853,7 +581,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
     setTimeout(() => { shuffleAndDisplay(cloudPool); setIsScanning(false); }, 1000); 
   };
 
-  useEffect(() => { fetchRepliedSignals(); }, [currentUser?.id]);
+  useEffect(() => { fetchSignals(); }, []);
   
   useEffect(() => { 
   const timer = setInterval(() => { 
@@ -894,16 +622,15 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,#12161f_0%,#0a0d14_100%)] z-0 pointer-events-none"></div>
       <div className="fixed inset-0 z-[1] scanline opacity-20 pointer-events-none"></div>
 
-      <header className="relative z-30 flex flex-col md:flex-row justify-between md:items-end pb-4 border-b border-slate-700 mb-4 lg:mb-5 gap-4">
+      <header className="relative z-20 flex flex-col md:flex-row justify-between md:items-end pb-4 border-b border-slate-700 mb-4 lg:mb-5 gap-4">
         <div className="flex items-baseline gap-4 md:gap-6">
           <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] text-slate-100">ONYCHINUS<span className="text-[#7a2f3a] text-xl md:text-2xl ml-3">2.0</span></h1>
         </div>
-                <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto">
+        <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto">
           <div className="flex gap-3 text-sm font-bold tracking-widest bg-[#11141c] p-1 border border-slate-700">
              <span onClick={() => setLang('en')} className={`px-3 py-1 cursor-pointer ${lang === 'en' ? 'bg-[#7a2f3a] text-white' : 'text-slate-500 hover:text-white'}`}>EN</span>
              <span onClick={() => setLang('zh')} className={`px-3 py-1 cursor-pointer ${lang === 'zh' ? 'bg-[#7a2f3a] text-white' : 'text-slate-500 hover:text-white'}`}>ZH</span>
           </div>
-          <NotificationCenter currentUser={currentUser} t={t} onJumpToSignal={handleJumpToSignal} />
           <div className="text-sm tracking-widest text-slate-400 flex items-center gap-4">
              <span className="hidden md:inline">{date || "2026 / 01 / 01"}</span><span className="text-slate-200 font-bold">{time || "00:00:00"}</span>
           </div>
@@ -926,24 +653,19 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
             <div className="mt-5 flex items-center gap-3 text-sm text-slate-300 font-bold"><div className="w-3 h-3 bg-slate-300 animate-pulse rounded-full"></div>{t.nominal}</div>
           </Panel>
           
-          <Panel title={t.my_signals} className="flex-1 min-h-[220px] flex flex-col">
-            <div className="flex gap-2 mb-3 shrink-0">
-                <button onClick={() => setArchiveTab("posted")} className={`flex-1 text-xs font-bold py-2 border tracking-wider cursor-pointer transition-colors ${archiveTab === "posted" ? "bg-[#7a2f3a] border-[#7a2f3a] text-white" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}>{t.tab_posted}</button>
-                <button onClick={() => setArchiveTab("replied")} className={`flex-1 text-xs font-bold py-2 border tracking-wider cursor-pointer transition-colors ${archiveTab === "replied" ? "bg-[#7a2f3a] border-[#7a2f3a] text-white" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}>{t.tab_replied}</button>
-            </div>
-            <div className="overflow-y-auto flex-1 pr-3 custom-scrollbar space-y-3">
-                {(archiveTab === "posted" ? mySignals : repliedSignals).length > 0 ? (archiveTab === "posted" ? mySignals : repliedSignals).map(sig => (
-                  <div key={sig.id} onClick={() => setActiveSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-3 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors flex flex-col justify-center">
+          <Panel title={t.my_signals} className="flex-1 min-h-[180px]">
+             <div className="overflow-y-auto h-full pr-3 custom-scrollbar space-y-3">
+                {mySignals.length > 0 ? mySignals.map(sig => (
+                   <div key={sig.id} onClick={() => setActiveSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-3 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors flex flex-col justify-center">
                       <div className="text-sm text-slate-200 font-bold truncate">{sig.title || "UNTITLED"}</div>
                       <div className="text-xs text-slate-500 mt-2 flex justify-between font-bold">
                         <span>{sig.access_code || `SIG-${sig.id.substring(0,4).toUpperCase()}`}</span>
                         {sig.passkey && <Lock size={14} className="text-[#9e3f4d]"/>}
                       </div>
-                  </div>
+                   </div>
                 )) : <div className="text-sm text-slate-500 font-bold mt-2">{t.no_records}</div>}
-            </div>
+             </div>
           </Panel>
-
         </aside>
 
         <section className="flex-1 flex items-center justify-center relative border border-slate-700/60 bg-[#0c1017]/40 p-4 lg:p-0 min-h-[400px] overflow-hidden shadow-[inset_0_0_80px_rgba(0,0,0,0.6)]">
@@ -1016,7 +738,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
             )}
           </div>
 
-          <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onClose={() => setActiveSignal(null)} onRefresh={fetchSignals} highlightReplyId={highlightReplyId} onConsumeHighlight={() => setHighlightReplyId(null)} />}</AnimatePresence>
+          <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onClose={() => setActiveSignal(null)} onRefresh={fetchSignals} />}</AnimatePresence>
 
         </section>
 
