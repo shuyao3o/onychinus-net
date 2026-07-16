@@ -556,6 +556,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
   const [displaySignals, setDisplaySignals] = useState<any[]>([]);
   const [activeSignal, setActiveSignal] = useState<any>(null);
   const [time, setTime] = useState("");
+  const [date, setDate] = useState("");
   const [isInjectModalOpen, setIsInjectModalOpen] = useState(false);
   const [isTargeting, setIsTargeting] = useState(false);
   const [targetCode, setTargetCode] = useState("");
@@ -582,11 +583,13 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
   useEffect(() => { fetchSignals(); }, []);
   
   useEffect(() => { 
-    const timer = setInterval(() => { 
-      const now = new Date(); setTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`); 
-      setScanNumbers({ lat: (Math.random() * 90).toFixed(3), lng: (Math.random() * 180).toFixed(3) });
-    }, 1000); 
-    return () => clearInterval(timer); 
+  const timer = setInterval(() => { 
+    const now = new Date(); 
+    setTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`); 
+    setDate(`${now.getFullYear()} / ${(now.getMonth()+1).toString().padStart(2, '0')} / ${now.getDate().toString().padStart(2, '0')}`);
+    setScanNumbers({ lat: (Math.random() * 90).toFixed(3), lng: (Math.random() * 180).toFixed(3) });
+  }, 1000); 
+  return () => clearInterval(timer);  
   }, []);
 
   const handleTargetSearch = async () => {
@@ -628,7 +631,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
              <span onClick={() => setLang('zh')} className={`px-3 py-1 cursor-pointer ${lang === 'zh' ? 'bg-[#7a2f3a] text-white' : 'text-slate-500 hover:text-white'}`}>ZH</span>
           </div>
           <div className="text-sm tracking-widest text-slate-400 flex items-center gap-4">
-             <span className="hidden md:inline">2026 / 07 / 15</span><span className="text-slate-200 font-bold">{time || "00:00:00"}</span>
+             <span className="hidden md:inline">{date || "2026 / 01 / 01"}</span><span className="text-slate-200 font-bold">{time || "00:00:00"}</span>
           </div>
         </div>
       </header>
