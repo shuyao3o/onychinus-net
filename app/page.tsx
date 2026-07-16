@@ -120,8 +120,8 @@ const ScrambleInput = ({ value, onChange, placeholder }: { value: string, onChan
           className="absolute inset-0 w-full opacity-0 cursor-text z-20" 
         />
         <div className="text-base text-[#7a2f3a] font-mono tracking-[0.2em] flex items-center">
-          {value.length === 0 ? (
-            <span className="text-slate-500 tracking-widest">{placeholder}</span>
+           {value.length === 0 ? (
+            placeholder ? <span className="text-slate-500 tracking-widest">{placeholder}</span> : null
           ) : (
             <span className="text-[#c75a6c] font-bold drop-shadow-[0_0_5px_rgba(199,90,108,0.8)]">
               {isRevealed ? value : display}
@@ -132,9 +132,7 @@ const ScrambleInput = ({ value, onChange, placeholder }: { value: string, onChan
       </div>
       <button 
         type="button" 
-        onMouseDown={() => setIsRevealed(true)} 
-        onMouseUp={() => setIsRevealed(false)} 
-        onMouseLeave={() => setIsRevealed(false)} 
+        onClick={() => setIsRevealed(prev => !prev)} 
         className="p-3 z-30 text-slate-400 hover:text-white transition-colors cursor-pointer"
       >
         {isRevealed ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -258,6 +256,7 @@ const TerminalLogin = ({ onLoginSuccess, t }: { onLoginSuccess: (p: any) => void
   const [codename, setCodename] = useState("");
   const [status, setStatus] = useState<"idle"|"authenticating"|"success">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [successName, setSuccessName] = useState(""); // 新增：登录/注册成功后展示的名字
 
   const handleAuth = async () => {
     if (!email || !password || (isRegistering && !codename)) { setErrorMsg("> [ERROR] Missing fields."); return; }
@@ -276,6 +275,7 @@ const TerminalLogin = ({ onLoginSuccess, t }: { onLoginSuccess: (p: any) => void
     .from("profiles")
     .insert({ id: userId, email, codename });
   if (profileError) throw profileError;
+  setSuccessName(codename);
   setStatus("success");
   setTimeout(() => onLoginSuccess({ id: userId, email, codename }), 2000);
 }
@@ -290,6 +290,7 @@ if (!profile) {
   setErrorMsg("> [ERROR] Account data missing or corrupted. Please contact admin.");
   return;
 }
+setSuccessName(profile.codename || "AGENT");
 setStatus("success"); 
 setTimeout(() => onLoginSuccess(profile), 2000);
 
@@ -325,13 +326,13 @@ setTimeout(() => onLoginSuccess(profile), 2000);
             {isRegistering && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
                 <div className="text-sm text-slate-400 mb-2 tracking-widest font-bold">{t.codename}</div>
-                <input type="text" value={codename} onChange={(e) => setCodename(e.target.value)} className="w-full bg-[#0a0d14] border border-slate-700 p-3 h-12 md:h-14 text-base text-[#9e3f4d] font-bold outline-none focus:border-[#7a2f3a]" />
+                <input type="text" maxLength={16} value={codename} onChange={(e) => setCodename(e.target.value)} className="w-full bg-[#0a0d14] border border-slate-700 p-3 h-12 md:h-14 text-base text-[#9e3f4d] font-bold outline-none focus:border-[#7a2f3a]" />
               </motion.div>
             )}
 
             <div>
               <div className="text-sm text-slate-400 mb-2 tracking-widest font-bold">{t.password}</div>
-              <ScrambleInput value={password} onChange={setPassword} placeholder="******" />
+              <ScrambleInput value={password} onChange={setPassword} placeholder="" />
             </div>
 
             {errorMsg && <div className="text-[#9e3f4d] text-sm font-bold animate-pulse">{errorMsg}</div>}
@@ -352,7 +353,7 @@ setTimeout(() => onLoginSuccess(profile), 2000);
         {status === "success" && (
           <div className="flex flex-col items-center justify-center gap-5 py-12 text-center">
             <div className="text-base text-slate-300">ACCESS GRANTED.<br/>
-              <span className="text-[#9e3f4d] text-xl font-bold mt-4 block">WELCOME, {codename}.</span>
+              <span className="text-[#9e3f4d] text-xl font-bold mt-4 block break-words">WELCOME, {successName || "AGENT"}.</span>
             </div>
           </div>
         )}
