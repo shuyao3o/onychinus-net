@@ -225,6 +225,7 @@ const formatDateTime = (iso?: string) => {
 const Gatekeeper = ({ onSuccess, t }: { onSuccess: () => void, t: any }) => {
   const [code, setCode] = useState("");
   const [error, setError] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
     if (code === "240715") {
@@ -235,6 +236,15 @@ const Gatekeeper = ({ onSuccess, t }: { onSuccess: () => void, t: any }) => {
       setTimeout(() => setError(false), 800); 
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => { inputRef.current?.focus(); }, 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (code.length === 6) handleSubmit();
+  }, [code]);
 
   return (
     <motion.div 
@@ -249,7 +259,10 @@ const Gatekeeper = ({ onSuccess, t }: { onSuccess: () => void, t: any }) => {
          <h1 className={`text-2xl md:text-3xl font-bold tracking-[0.3em] mb-4 ${error ? 'text-black' : 'text-slate-100'}`}>{t.gatekeeper_title}</h1>
          <p className={`text-sm md:text-base tracking-widest mb-12 ${error ? 'text-black font-bold' : 'text-slate-400'}`}>{t.gatekeeper_sub}</p>
          
-         <div className="flex justify-center gap-4 mb-8">
+         <div 
+           className="flex justify-center gap-4 mb-8 cursor-text"
+           onClick={() => inputRef.current?.focus()}
+         >
             {Array.from({length: 6}).map((_, i) => (
                <div key={i} className={`w-12 h-16 md:w-14 md:h-20 flex items-center justify-center text-3xl font-bold border-b-4 ${code[i] ? 'border-[#7a2f3a] text-[#7a2f3a]' : 'border-slate-700 text-transparent'} ${error ? 'border-black text-black' : ''}`}>
                  {code[i] || "_"}
@@ -258,18 +271,18 @@ const Gatekeeper = ({ onSuccess, t }: { onSuccess: () => void, t: any }) => {
          </div>
          
          <input 
-           type="tel" maxLength={6} autoFocus value={code} 
-           onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))} 
-           className="absolute inset-0 opacity-0 cursor-text"
+           ref={inputRef}
+           type="tel" 
+           inputMode="numeric"
+           pattern="[0-9]*"
+           maxLength={6} 
+           value={code} 
+           onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))} 
+           className="absolute inset-0 w-full h-full opacity-0 cursor-text"
+           style={{ fontSize: 16 }}
          />
-         
-         {error && <div className="text-black font-bold text-base tracking-widest animate-pulse mt-4 bg-[#7a2f3a] inline-block px-6 py-2">{t.gatekeeper_error}</div>}
-         
-         {code.length === 6 && !error && (
-            <button onClick={handleSubmit} className="mt-10 px-12 py-4 border-2 border-[#7a2f3a] text-[#7a2f3a] text-base font-bold tracking-widest hover:bg-[#7a2f3a] hover:text-[#0a0d14] transition-colors z-20 relative cursor-pointer">
-              [ VERIFY ]
-            </button>
-         )}
+
+         {error && <p className="text-black text-xs font-bold mt-6 tracking-widest">{t.gatekeeper_error}</p>}
       </div>
     </motion.div>
   );
