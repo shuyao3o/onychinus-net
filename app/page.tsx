@@ -551,6 +551,14 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
     }
   };
 
+  const handleDeleteReply = async (replyId: string) => {
+    if (confirm("DANGER: 您确定要销毁这条回复记录吗？此操作不可逆。")) {
+      await supabase.from("notifications").delete().eq("reply_id", replyId);
+      await supabase.from("replies").delete().eq("id", replyId);
+      fetchR();
+    }
+  };
+
   const startQuote = (r: any, floor: number) => {
     setReplyTarget({
       id: r.id,
@@ -652,6 +660,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
             <div className="max-h-[200px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-4 bg-[#0a0d14]/40 p-4 rounded-sm">
               {replies.map((r, idx) => {
                 const isReplyAuthor = r.author_codename === signal.author_codename;
+                const isMyReply = r.author_id ? currentUser?.id === r.author_id : (!!currentUser?.codename && currentUser.codename === r.author_codename);
                 const floor = idx + 1;
                 const quotedFloor = r.reply_to_id ? findFloor(r.reply_to_id) : null;
                 const isFlash = flashId === r.id;
@@ -669,9 +678,14 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
                         {isReplyAuthor && <User size={14} className="inline ml-1 mb-0.5"/>}
                       </span>
                       {r.created_at && <span className="text-slate-600 text-[11px]">{formatDateTime(r.created_at)}</span>}
-                      <button onClick={() => startQuote(r, floor)} className="ml-auto text-slate-500 hover:text-[#9e3f4d] cursor-pointer flex items-center gap-1 text-[11px]">
+                      <button onClick={() => startQuote(r, floor)} className={isMyReply ? "text-slate-500 hover:text-[#9e3f4d] cursor-pointer flex items-center gap-1 text-[11px] ml-auto" : "ml-auto text-slate-500 hover:text-[#9e3f4d] cursor-pointer flex items-center gap-1 text-[11px]"}>
                         <Reply size={12}/> QUOTE
                       </button>
+                      {isMyReply && (
+                        <button onClick={() => handleDeleteReply(r.id)} className="text-[#802020] hover:text-red-500 cursor-pointer flex items-center gap-1 text-[11px]">
+                          <Trash2 size={12}/> DEL
+                        </button>
+                      )}
                     </div>
                     {r.reply_to_id && (
                       <div className="ml-4 mt-1 mb-1 text-[11px] text-slate-500 border-l-2 border-slate-700 pl-2 italic truncate">
