@@ -550,7 +550,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
               <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
             </div>
           </div>
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0 gap-0">
             <div className="flex-1 min-h-[100px] overflow-y-auto pr-4 custom-scrollbar text-base md:text-lg mb-4 text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
               <div className="text-sm text-slate-400 flex flex-wrap items-center justify-between gap-2 mb-6 border-b border-slate-800/50 pb-3 font-bold">
                 <span>OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
@@ -613,16 +613,16 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
               </div>
             )}
 
-            <form onSubmit={(e) => { e.preventDefault(); handleSendReply(); }} className="flex flex-col md:flex-row items-stretch md:items-end gap-3 border-t border-slate-700/50 pt-4 shrink-0">
+            <form onSubmit={(e) => { e.preventDefault(); handleSendReply(); }} className="flex flex-col md:flex-row items-stretch md:items-end gap-2 md:gap-3 border-t border-slate-700/50 pt-3 md:pt-4 shrink-0">
               <textarea
                 ref={textareaRef}
                 rows={1}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={t.reply_placeholder}
-                className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text rounded-sm resize-none overflow-y-auto custom-scrollbar leading-relaxed max-h-[140px]"
+                className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text rounded-sm resize-none overflow-y-auto custom-scrollbar leading-relaxed max-h-[80px] md:max-h-[140px]"
               />
-              <button type="submit" className="shrink-0 px-4 py-3 md:py-4 bg-[#11141c] border border-slate-600 text-slate-300 font-bold text-sm hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">SEND</button>
+              <button type="submit" className="shrink-0 w-full md:w-auto px-4 py-2.5 md:py-4 bg-[#11141c] border border-slate-600 text-slate-300 font-bold text-sm hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">SEND</button>
             </form>
           </div>
         </motion.div>
@@ -961,7 +961,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
             <div className="mt-5 flex items-center gap-3 text-sm text-slate-300 font-bold"><div className="w-3 h-3 bg-slate-300 animate-pulse rounded-full"></div>{t.nominal}</div>
           </Panel>
           
-          <Panel title={t.my_signals} className="flex-1 min-h-[220px] flex flex-col">
+          <Panel title={t.my_signals} className="flex-1 min-h-[220px] max-h-[320px] lg:max-h-none flex flex-col">
             <div className="flex gap-2 mb-3 shrink-0">
                 <button onClick={() => setArchiveTab("posted")} className={`flex-1 text-xs font-bold py-2 border tracking-wider cursor-pointer transition-colors ${archiveTab === "posted" ? "bg-[#7a2f3a] border-[#7a2f3a] text-white" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}>{t.tab_posted}</button>
                 <button onClick={() => setArchiveTab("replied")} className={`flex-1 text-xs font-bold py-2 border tracking-wider cursor-pointer transition-colors ${archiveTab === "replied" ? "bg-[#7a2f3a] border-[#7a2f3a] text-white" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}>{t.tab_replied}</button>
@@ -1055,7 +1055,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
 
         </section>
 
-        <aside className="w-full lg:w-[320px] flex flex-col gap-6 shrink-0 lg:overflow-y-auto custom-scrollbar lg:pl-3">
+        <aside className="w-full lg:w-[320px] flex flex-col gap-6 shrink-0 overflow-y-auto custom-scrollbar lg:pl-3">
           <Panel title="SYSTEM ANALYTICS" className="h-[200px] md:h-[240px]">
              <div className="flex items-center gap-6 mt-6 md:mt-8">
                 <div className="w-16 h-16 md:w-24 md:h-24 rounded-full border-4 border-slate-800 border-t-slate-500 flex items-center justify-center text-base md:text-xl font-bold text-slate-200">76%</div>
