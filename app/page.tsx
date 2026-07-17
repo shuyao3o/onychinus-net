@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Crosshair, X, Terminal, Cpu, Zap, Wifi, Shield, 
-Activity, Radio as RadioIcon, Code, Lock, Unlock, Eye, EyeOff, Search, KeyRound, Power, RefreshCw, FileText, User, Bell, Trash2, Reply
+Activity, Radio as RadioIcon, Code, Lock, Unlock, Eye, EyeOff, Search, KeyRound, Power, RefreshCw, FileText, User, Bell, Trash2, Reply, Heart, Users, UtensilsCrossed
 } from "lucide-react";
 import { supabase } from "@/utils/supabase";
 
@@ -61,8 +61,20 @@ const TRANSLATIONS = {
     tab_posted: "POSTED",
     tab_replied: "REPLIED",
     refresh_replies: "REFRESH",
-    refreshing: "SYNCING..."
+    refreshing: "SYNCING...",
+    sectors_title: "SECTOR ACCESS",
+    sector_staff: "STAFF ONLY",
+    sector_staff_sub: "Internal Comms (Roleplay)",
+    sector_menu: "MENU",
+    sector_menu_sub: "Fanwork Archive",
+    board_new_post: "[ NEW TRANSMISSION ]",
+    board_no_posts: "> No records in this sector yet.",
+    rename_title: "MODIFY CODENAME",
+    rename_placeholder: "NEW CODENAME (MAX 16 CHARS)",
+    rename_btn: "[ CONFIRM CHANGE ]",
+    rename_updating: "UPDATING RECORDS..."
   },
+
   zh: {
     gatekeeper_title: "ONYCHINUS 底层访问协议",
     gatekeeper_sub: "请输入 6 位通讯授权码",
@@ -112,7 +124,18 @@ const TRANSLATIONS = {
     tab_posted: "我发送的",
     tab_replied: "我回复的",
     refresh_replies: "刷新",
-    refreshing: "同步中..."
+    refreshing: "同步中...",
+    sectors_title: "分区频道",
+    sector_staff: "内部通讯",
+    sector_staff_sub: "论坛体专区",
+    sector_menu: "老饕菜单",
+    sector_menu_sub: "同人产粮区",
+    board_new_post: "[ 发布新记录 ]",
+    board_no_posts: "> 该分区暂无通讯记录。",
+    rename_title: "更改专属代号",
+    rename_placeholder: "输入新代号（16字符内）",
+    rename_btn: "[ 确认更改 ]",
+    rename_updating: "正在同步历史记录..."
   }
 };
 
@@ -419,6 +442,34 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const replyRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [isRefreshingReplies, setIsRefreshingReplies] = useState(false);
+  const [likesCount, setLikesCount] = useState<number>(signal.likes_count || 0);
+  const [isLiked, setIsLiked] = useState(false);
+
+  useEffect(() => {
+    const checkLiked = async () => {
+      if (!currentUser?.id) return;
+      const { data } = await supabase.from("signal_likes").select("id").eq("signal_id", signal.id).eq("author_id", currentUser.id).maybeSingle();
+      setIsLiked(!!data);
+    };
+    checkLiked();
+  }, [signal.id, currentUser?.id]);
+
+  const handleToggleLike = async () => {
+    if (!currentUser?.id) { alert("> 请先登录后再点赞。"); return; }
+    if (isLiked) {
+      await supabase.from("signal_likes").delete().eq("signal_id", signal.id).eq("author_id", currentUser.id);
+      const newCount = Math.max(0, likesCount - 1);
+      setLikesCount(newCount);
+      setIsLiked(false);
+      await supabase.from("signals").update({ likes_count: newCount }).eq("id", signal.id);
+    } else {
+      await supabase.from("signal_likes").insert({ signal_id: signal.id, author_id: currentUser.id });
+      const newCount = likesCount + 1;
+      setLikesCount(newCount);
+      setIsLiked(true);
+      await supabase.from("signals").update({ likes_count: newCount }).eq("id", signal.id);
+    }
+  };
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -522,10 +573,16 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
               <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
             </div>
           </div>
-          <div className="flex flex-col md:flex-row md:justify-between md:items-baseline gap-1 md:gap-3 mb-4">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-baseline gap-1 md:gap-3 mb-2">
             <div className="text-xl md:text-2xl font-bold text-slate-100 break-words min-w-0">{signal.title || "UNTITLED_RECORD"}</div>
             {signal.created_at && <span className="text-xs text-slate-500 shrink-0">{formatDateTime(signal.created_at)}</span>}
           </div>
+          {signal.board === "menu" && (
+            <button onClick={handleToggleLike} className="flex items-center gap-1.5 mb-4 self-start cursor-pointer group">
+              <Heart size={16} className={isLiked ? "fill-[#9e3f4d] text-[#9e3f4d]" : "text-slate-500 group-hover:text-[#9e3f4d]"} />
+              <span className={`text-xs font-bold ${isLiked ? "text-[#9e3f4d]" : "text-slate-500"}`}>{likesCount}</span>
+            </button>
+          )}
           <div className="text-sm text-slate-400 mb-8 italic border-l-4 border-slate-700 pl-4 bg-[#11141c] p-4 rounded-sm leading-relaxed">
             "{signal.text.substring(0, 50)}{signal.text.length > 50 ? "..." : ""}"
           </div>
@@ -565,10 +622,19 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
           </div>
           <div className="flex-1 flex flex-col overflow-hidden min-h-0 gap-0">
             <div className="flex-1 min-h-[100px] overflow-y-auto pr-4 custom-scrollbar text-base md:text-lg mb-4 text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
-              <div className="text-sm text-slate-400 flex flex-wrap items-center justify-between gap-2 mb-6 border-b border-slate-800/50 pb-3 font-bold">
+                <div className="text-sm text-slate-400 flex flex-wrap items-center justify-between gap-2 mb-6 border-b border-slate-800/50 pb-3 font-bold">
                 <span>OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
-                {signal.created_at && <span className="text-slate-500 text-xs">{formatDateTime(signal.created_at)}</span>}
+                <div className="flex items-center gap-4">
+                  {signal.board === "menu" && (
+                    <button onClick={handleToggleLike} className="flex items-center gap-1.5 cursor-pointer group">
+                      <Heart size={15} className={isLiked ? "fill-[#9e3f4d] text-[#9e3f4d]" : "text-slate-500 group-hover:text-[#9e3f4d]"} />
+                      <span className={`text-xs font-bold ${isLiked ? "text-[#9e3f4d]" : "text-slate-500"}`}>{likesCount}</span>
+                    </button>
+                  )}
+                  {signal.created_at && <span className="text-slate-500 text-xs">{formatDateTime(signal.created_at)}</span>}
+                </div>
               </div>
+
               {dec}
             </div>
 
@@ -746,7 +812,7 @@ const NotificationCenter = ({ currentUser, t, onJumpToSignal }: any) => {
   );
 };
 
-const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
+const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t, board = "radar", boardLabel }: any) => {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [isEncrypted, setIsEncrypted] = useState(false);
@@ -762,7 +828,8 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
     const finalTitle = title.trim()||"UNTITLED_RECORD";
     const { error } = await supabase.from("signals").insert({ 
       title: finalTitle, text, pos_x: Math.floor(Math.random()*80)+10, pos_y: Math.floor(Math.random()*80)+10, 
-      author_codename: currentUser?.codename || "UNKNOWN", author_id: currentUser?.id || null, access_code: accessCode, passkey: isEncrypted ? passkey : null 
+      author_codename: currentUser?.codename || "UNKNOWN", author_id: currentUser?.id || null, access_code: accessCode, passkey: isEncrypted ? passkey : null,
+      board
     });
     if(!error) { setGeneratedCode(accessCode); setTimeout(() => setStatus("success"), 1000); }
   };
@@ -812,10 +879,51 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t }: any) => {
   )}</AnimatePresence>;
 };
 
+const BoardModal = ({ board, isOpen, onClose, posts, t, onOpenSignal, onOpenCompose }: any) => {
+  const isStaff = board === "staff";
+  const label = isStaff ? t.sector_staff : t.sector_menu;
+  const accent = isStaff ? "text-slate-300" : "text-[#9e3f4d]";
+  return <AnimatePresence>{isOpen && (
+    <motion.div key={`board-modal-${board}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9990] flex items-start md:items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md px-4 overflow-y-auto py-6">
+      <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="relative w-full max-w-[700px] min-h-[500px] max-h-[90dvh] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+        <div className="flex justify-between items-center border-b border-slate-700 pb-4 mb-5 shrink-0">
+          <span className={`text-sm md:text-lg font-bold tracking-widest ${accent}`}>[ {label} ]</span>
+          <button onClick={onClose} className="hover:text-white cursor-pointer"><X size={22}/></button>
+        </div>
+
+        <button onClick={onOpenCompose} className="mb-5 shrink-0 w-full bg-[#11141c] border-2 border-slate-600 text-slate-200 text-sm font-bold py-3 hover:border-[#7a2f3a] hover:text-[#7a2f3a] transition-colors cursor-pointer">
+          {t.board_new_post}
+        </button>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
+          {posts.length === 0 && <div className="text-sm text-slate-500 font-bold italic">{t.board_no_posts}</div>}
+          {posts.map((sig: any) => (
+            <div key={sig.id} onClick={() => onOpenSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-4 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors">
+              <div className="flex justify-between items-start gap-3 mb-2">
+                <span className="text-sm md:text-base text-slate-200 font-bold break-words min-w-0">{sig.title || "UNTITLED_RECORD"}</span>
+                {sig.passkey && <Lock size={14} className="text-[#9e3f4d] shrink-0 mt-1"/>}
+              </div>
+              <div className="text-xs text-slate-500 flex justify-between items-center font-bold">
+                <span>{sig.author_codename} · {formatDateTime(sig.created_at)}</span>
+                {board === "menu" && (
+                  <span className="flex items-center gap-1.5 text-slate-500">
+                    <Heart size={13} className={sig.likes_count > 0 ? "fill-[#9e3f4d] text-[#9e3f4d]" : ""} />
+                    {sig.likes_count || 0}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  )}</AnimatePresence>;
+};
+
 // ==========================================
 // 6. 主控制台
 // ==========================================
-const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
+const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any) => {
   const t = TRANSLATIONS[lang as keyof typeof TRANSLATIONS];
   const [cloudPool, setCloudPool] = useState<any[]>([]);
   const [displaySignals, setDisplaySignals] = useState<any[]>([]);
@@ -831,14 +939,17 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
   const [targetCode, setTargetCode] = useState("");
   const [scanNumbers, setScanNumbers] = useState({ lat: "00.000", lng: "00.000" });
   const [isScanning, setIsScanning] = useState(false);
+  const [openBoard, setOpenBoard] = useState<"staff" | "menu" | null>(null);
+  const [isBoardComposeOpen, setIsBoardComposeOpen] = useState(false);
 
   const fetchSignals = async () => { 
     const { data } = await supabase.from("signals").select("*").order("created_at", { ascending: false }).limit(1000); 
     if(data) { 
       setCloudPool(data); // 完整数据，供"我发的/我回复的"筛选使用，不再受随机抽样影响
-      shuffleAndDisplay(data); // 雷达图展示池单独生成，互不干扰
+      shuffleAndDisplay(data.filter((s: any) => s.board !== "staff")); // 雷达图只展示 radar/menu，staff 分区不上雷达
     }
   };
+
 
   const fetchRepliedSignals = async () => {
   if (!currentUser?.id) return;
@@ -893,11 +1004,10 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
     const randomFromRest = randomPick(rest, 8);
     setDisplaySignals([...randomFromLatest, ...randomFromRest]);
   };
-
   
   const handleScanRefresh = () => { 
     setIsScanning(true); 
-    setTimeout(() => { shuffleAndDisplay(cloudPool); setIsScanning(false); }, 1000); 
+    setTimeout(() => { shuffleAndDisplay(cloudPool.filter((s: any) => s.board !== "staff")); setIsScanning(false); }, 1000); 
   };
 
   useEffect(() => { fetchSignals(); }, []);
@@ -936,13 +1046,31 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
 
   const mySignals = cloudPool.filter(s => s.author_id ? s.author_id === currentUser?.id : s.author_codename === currentUser?.codename);
 
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [renameInput, setRenameInput] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
+
+  const handleRename = async () => {
+    const newName = renameInput.trim();
+    if (!newName || !currentUser?.id) return;
+    setIsRenaming(true);
+    await supabase.from("profiles").update({ codename: newName }).eq("id", currentUser.id);
+    await supabase.from("signals").update({ author_codename: newName }).eq("author_id", currentUser.id);
+    await supabase.from("replies").update({ author_codename: newName }).eq("author_id", currentUser.id);
+    setCurrentUser({ ...currentUser, codename: newName });
+    await fetchSignals();
+    setIsRenaming(false);
+    setIsRenameOpen(false);
+    setRenameInput("");
+  };
+
   return (
     <div className="min-h-screen lg:h-screen w-screen bg-[#0a0d14] text-slate-400 font-mono flex flex-col p-2 lg:p-6 relative overflow-y-auto lg:overflow-hidden">
       <style dangerouslySetInnerHTML={{__html: `@keyframes sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } .radar-sweep { animation: sweep 4s linear infinite; } .scanline { background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 51%); background-size: 100% 4px; pointer-events: none !important; } .custom-scrollbar::-webkit-scrollbar { width: 6px; } .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); } .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 6px; }`}} />
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,#12161f_0%,#0a0d14_100%)] z-0 pointer-events-none"></div>
       <div className="fixed inset-0 z-[1] scanline opacity-20 pointer-events-none"></div>
 
-      <header className="relative z-10 flex flex-col md:flex-row justify-between md:items-end pb-4 border-b border-slate-700 mb-4 lg:mb-5 gap-4">
+      <header className="relative z-40 flex flex-col md:flex-row justify-between md:items-end pb-4 border-b border-slate-700 mb-4 lg:mb-5 gap-4">
         <div className="flex items-baseline gap-4 md:gap-6">
           <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] text-slate-100">ONYCHINUS<span className="text-[#7a2f3a] text-xl md:text-2xl ml-3">2.0</span></h1>
         </div>
@@ -980,15 +1108,20 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
                 <button onClick={() => setArchiveTab("replied")} className={`flex-1 text-xs font-bold py-2 border tracking-wider cursor-pointer transition-colors ${archiveTab === "replied" ? "bg-[#7a2f3a] border-[#7a2f3a] text-white" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}>{t.tab_replied}</button>
             </div>
             <div className="overflow-y-auto flex-1 pr-3 custom-scrollbar space-y-3">
-                {(archiveTab === "posted" ? mySignals : repliedSignals).length > 0 ? (archiveTab === "posted" ? mySignals : repliedSignals).map(sig => (
+                 {(archiveTab === "posted" ? mySignals : repliedSignals).length > 0 ? (archiveTab === "posted" ? mySignals : repliedSignals).map(sig => (
                   <div key={sig.id} onClick={() => setActiveSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-3 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors flex flex-col justify-center">
-                      <div className="text-sm text-slate-200 font-bold truncate">{sig.title || "UNTITLED"}</div>
+                      <div className="text-sm text-slate-200 font-bold truncate flex items-center gap-2">
+                        {sig.board === "staff" && <span className="text-[9px] px-1.5 py-0.5 bg-slate-700 text-slate-300 rounded-sm shrink-0">STAFF</span>}
+                        {sig.board === "menu" && <span className="text-[9px] px-1.5 py-0.5 bg-[#7a2f3a] text-white rounded-sm shrink-0">MENU</span>}
+                        <span className="truncate">{sig.title || "UNTITLED"}</span>
+                      </div>
                       <div className="text-xs text-slate-500 mt-2 flex justify-between font-bold">
                         <span>{sig.access_code || `SIG-${sig.id.substring(0,4).toUpperCase()}`}</span>
                         {sig.passkey && <Lock size={14} className="text-[#9e3f4d]"/>}
                       </div>
                   </div>
                 )) : <div className="text-sm text-slate-500 font-bold mt-2">{t.no_records}</div>}
+
             </div>
           </Panel>
 
@@ -1089,12 +1222,28 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
               <div className="grid grid-cols-3 gap-2 md:gap-3">
                  <button onClick={handleScanRefresh} className="flex flex-col items-center justify-center gap-3 p-4 border border-slate-800 hover:bg-[#11141c] text-slate-400 hover:text-slate-200 text-[11px] md:text-xs whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><RefreshCw size={20}/>{t.scan}</button>
                  <button onClick={() => setIsTargeting(true)} className="flex flex-col items-center justify-center gap-3 p-4 border border-slate-800 hover:bg-[#11141c] text-slate-400 hover:text-slate-200 text-[11px] md:text-xs whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><Search size={20}/>{t.target}</button>
-                 <button onClick={() => setIsInjectModalOpen(true)} className="flex flex-col items-center justify-center gap-3 p-4 border border-slate-700 bg-[#11141c] hover:border-[#7a2f3a] text-slate-300 hover:text-[#7a2f3a] text-[11px] md:text-xs whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><Code size={20}/>{t.inject}</button>
+                  <button onClick={() => setIsInjectModalOpen(true)} className="flex flex-col items-center justify-center gap-3 p-4 border border-slate-700 bg-[#11141c] hover:border-[#7a2f3a] text-slate-300 hover:text-[#7a2f3a] text-[11px] md:text-xs whitespace-nowrap tracking-wider font-bold cursor-pointer shadow-sm"><Code size={20}/>{t.inject}</button>
               </div>
             )}
           </Panel>
+
+          <Panel title={t.sectors_title} className="flex-shrink-0">
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setOpenBoard("staff")} className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors">
+                <Users size={22}/>
+                <span className="text-[11px] md:text-xs font-bold tracking-wider text-center leading-tight">{t.sector_staff}</span>
+                <span className="text-[10px] text-slate-600 text-center leading-tight">{t.sector_staff_sub}</span>
+              </button>
+              <button onClick={() => setOpenBoard("menu")} className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors">
+                <UtensilsCrossed size={22}/>
+                <span className="text-[11px] md:text-xs font-bold tracking-wider text-center leading-tight">{t.sector_menu}</span>
+                <span className="text-[10px] text-slate-600 text-center leading-tight">{t.sector_menu_sub}</span>
+              </button>
+            </div>
+          </Panel>
         </aside>
       </main>
+
 
       <InjectPanel 
         isOpen={isInjectModalOpen} 
@@ -1104,13 +1253,70 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
         t={t} 
       />
 
-      <footer className="relative z-20 hidden lg:flex justify-between items-center pt-4 border-t border-slate-800 shrink-0 text-sm tracking-widest text-slate-600 font-bold mt-4">
-        <button onClick={onLogout} className="flex items-center gap-3 text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-6 py-3 bg-[#0c1017] cursor-pointer transition-colors"><Power size={16}/> {t.disconnect}</button>
-        <div className="flex gap-20">
+      <BoardModal
+        board={openBoard}
+        isOpen={!!openBoard}
+        onClose={() => setOpenBoard(null)}
+        posts={cloudPool.filter(s => s.board === openBoard)}
+        t={t}
+        onOpenSignal={(sig: any) => setActiveSignal(sig)}
+        onOpenCompose={() => setIsBoardComposeOpen(true)}
+      />
+
+      <InjectPanel
+        isOpen={isBoardComposeOpen}
+        onClose={() => setIsBoardComposeOpen(false)}
+        onRefresh={fetchSignals}
+        currentUser={currentUser}
+        t={t}
+        board={openBoard || "radar"}
+        boardLabel={openBoard === "staff" ? "STAFF_TRANSMISSION" : openBoard === "menu" ? "MENU_SUBMISSION" : undefined}
+      />
+
+      <AnimatePresence>
+        {isRenameOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9995] flex items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md px-4">
+            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="relative w-full max-w-[420px] bg-[#0c1017] border border-slate-600 p-6 font-mono text-slate-200 shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-3 mb-4">
+                <span className="text-sm font-bold tracking-widest text-slate-300">[ {t.rename_title} ]</span>
+                <button onClick={() => setIsRenameOpen(false)} className="hover:text-white cursor-pointer"><X size={20}/></button>
+              </div>
+              <input
+                type="text"
+                value={renameInput}
+                onChange={(e) => setRenameInput(e.target.value.slice(0, 16))}
+                maxLength={16}
+                autoFocus
+                placeholder={t.rename_placeholder}
+                style={{ fontSize: 16 }}
+                className="w-full bg-[#0a0d14] border border-slate-700 p-3 text-sm text-slate-100 outline-none focus:border-[#7a2f3a] mb-4"
+              />
+              <button
+                onClick={handleRename}
+                disabled={isRenaming || !renameInput.trim()}
+                className="w-full bg-[#11141c] border-2 border-slate-600 text-slate-200 text-sm font-bold py-3 hover:border-[#7a2f3a] hover:text-[#7a2f3a] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isRenaming ? t.rename_updating : t.rename_btn}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <footer className="relative z-20 flex flex-col md:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-800 shrink-0 text-sm tracking-widest text-slate-600 font-bold mt-4">
+        <button onClick={onLogout} className="flex items-center gap-3 text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-6 py-3 bg-[#0c1017] cursor-pointer transition-colors shrink-0"><Power size={16}/> {t.disconnect}</button>
+        <div className="flex gap-8 md:gap-20">
           <div><div className="mb-1 text-xs text-slate-600">{t.mode}</div><div className="text-slate-300">COMMAND</div></div>
-          <div><div className="mb-1 text-xs text-slate-600">{t.operator}</div><div className="text-[#9e3f4d] uppercase">{currentUser?.codename}</div></div>
+          <div
+            onClick={() => { setRenameInput(currentUser?.codename || ""); setIsRenameOpen(true); }}
+            className="cursor-pointer group"
+          >
+            <div className="mb-1 text-xs text-slate-600 group-hover:text-slate-400">{t.operator}</div>
+            <div className="text-[#9e3f4d] uppercase group-hover:underline break-words">{currentUser?.codename}</div>
+          </div>
         </div>
       </footer>
+
     </div>
   );
 };
@@ -1139,7 +1345,7 @@ export default function AppRoot() {
         </motion.div> 
       ) : (
         <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}>
-          <Dashboard currentUser={currentUser} onLogout={handleLogout} lang={lang} setLang={setLang} />
+          <Dashboard currentUser={currentUser} onLogout={handleLogout} lang={lang} setLang={setLang} setCurrentUser={setCurrentUser} />
         </motion.div>
       )}
     </AnimatePresence>
