@@ -1197,7 +1197,6 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
             )}
           </div>
 
-          <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onClose={() => setActiveSignal(null)} onRefresh={fetchSignals} highlightReplyId={highlightReplyId} onConsumeHighlight={() => setHighlightReplyId(null)} />}</AnimatePresence>
 
         </section>
 
@@ -1244,6 +1243,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
         </aside>
       </main>
 
+      <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onClose={() => setActiveSignal(null)} onRefresh={fetchSignals} highlightReplyId={highlightReplyId} onConsumeHighlight={() => setHighlightReplyId(null)} />}</AnimatePresence>
 
       <InjectPanel 
         isOpen={isInjectModalOpen} 
