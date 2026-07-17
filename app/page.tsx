@@ -59,7 +59,9 @@ const TRANSLATIONS = {
     quoted_you: "quoted your reply",
     mark_all_read: "MARK ALL READ",
     tab_posted: "POSTED",
-    tab_replied: "REPLIED" 
+    tab_replied: "REPLIED",
+    refresh_replies: "REFRESH",
+    refreshing: "SYNCING..."
   },
   zh: {
     gatekeeper_title: "ONYCHINUS 底层访问协议",
@@ -108,7 +110,9 @@ const TRANSLATIONS = {
     quoted_you: "引用了你的回复",
     mark_all_read: "全部标为已读",
     tab_posted: "我发送的",
-    tab_replied: "我回复的"
+    tab_replied: "我回复的",
+    refresh_replies: "刷新",
+    refreshing: "同步中..."
   }
 };
 
@@ -401,6 +405,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
   const [flashId, setFlashId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const replyRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [isRefreshingReplies, setIsRefreshingReplies] = useState(false);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -411,10 +416,13 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
 
   const isAuthor = signal.author_id ? currentUser?.id === signal.author_id : currentUser?.codename === signal.author_codename;
 
-  const fetchR = async () => { 
+  const fetchR = async (manual = false) => { 
+    if (manual) setIsRefreshingReplies(true);
     const { data } = await supabase.from("replies").select("*").eq("signal_id", signal.id).order("created_at"); 
     if (data) setReplies(data); 
+    if (manual) setTimeout(() => setIsRefreshingReplies(false), 400); // 短暂展示旋转动画，避免瞬间闪过看不到反馈
   };
+
 
   useEffect(() => { if (step === "read") fetchR(); }, [signal.id, step]);
 
@@ -491,7 +499,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
   };
 
   return (
-    <motion.div key="decrypt-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0a0d14]/80 backdrop-blur-md px-4 overflow-y-auto py-6">
+    <motion.div key="decrypt-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[10000] flex items-start md:items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md px-4 overflow-y-auto py-6">
       {step === "preview" && (
         <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="relative w-full max-w-[450px] bg-[#0c1017] border border-slate-600 shadow-[0_0_50px_rgba(0,0,0,0.9)] p-8 font-mono text-slate-200 flex flex-col">
           <div className="flex justify-between border-b border-slate-700 pb-4 mb-6 items-center">
@@ -551,6 +559,17 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
               {dec}
             </div>
 
+            <div className="flex items-center justify-between mb-2 shrink-0 px-1">
+              <span className="text-xs text-slate-500 font-bold tracking-widest">RESPONSE LOG ({replies.length})</span>
+              <button 
+                onClick={() => fetchR(true)} 
+                disabled={isRefreshingReplies}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-[#9e3f4d] font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <RefreshCw size={13} className={isRefreshingReplies ? "animate-spin" : ""} />
+                {isRefreshingReplies ? t.refreshing : t.refresh_replies}
+              </button>
+            </div>
             <div className="max-h-[200px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-4 bg-[#0a0d14]/40 p-4 rounded-sm">
               {replies.map((r, idx) => {
                 const isReplyAuthor = r.author_codename === signal.author_codename;
@@ -803,10 +822,8 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
   const fetchSignals = async () => { 
     const { data } = await supabase.from("signals").select("*").order("created_at", { ascending: false }).limit(1000); 
     if(data) { 
-      const latest80 = data.slice(0, 80);
-      const random120 = [...data.slice(80)].sort(() => 0.5 - Math.random()).slice(0, 120);
-      const combinedPool = [...latest80, ...random120];
-      setCloudPool(combinedPool); shuffleAndDisplay(combinedPool); 
+      setCloudPool(data); // 完整数据，供"我发的/我回复的"筛选使用，不再受随机抽样影响
+      shuffleAndDisplay(data); // 雷达图展示池单独生成，互不干扰
     }
   };
 
@@ -846,7 +863,24 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
 };
 
 
-  const shuffleAndDisplay = (pool: any[]) => { setDisplaySignals([...pool].sort(() => 0.5 - Math.random()).slice(0, 18)); };
+  const shuffleAndDisplay = (pool: any[]) => {
+    const latest80 = pool.slice(0, 80);
+    const rest = pool.slice(80);
+    // 用更轻量的随机抽取方式（Fisher-Yates 局部抽样），避免整个数组排序造成卡顿
+    const randomPick = (arr: any[], count: number) => {
+      const result = [...arr];
+      const n = Math.min(count, result.length);
+      for (let i = 0; i < n; i++) {
+        const j = i + Math.floor(Math.random() * (result.length - i));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result.slice(0, n);
+    };
+    const randomFromLatest = randomPick(latest80, 10);
+    const randomFromRest = randomPick(rest, 8);
+    setDisplaySignals([...randomFromLatest, ...randomFromRest]);
+  };
+
   
   const handleScanRefresh = () => { 
     setIsScanning(true); 
@@ -895,7 +929,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang }: any) => {
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,#12161f_0%,#0a0d14_100%)] z-0 pointer-events-none"></div>
       <div className="fixed inset-0 z-[1] scanline opacity-20 pointer-events-none"></div>
 
-      <header className="relative z-30 flex flex-col md:flex-row justify-between md:items-end pb-4 border-b border-slate-700 mb-4 lg:mb-5 gap-4">
+      <header className="relative z-10 flex flex-col md:flex-row justify-between md:items-end pb-4 border-b border-slate-700 mb-4 lg:mb-5 gap-4">
         <div className="flex items-baseline gap-4 md:gap-6">
           <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] text-slate-100">ONYCHINUS<span className="text-[#7a2f3a] text-xl md:text-2xl ml-3">2.0</span></h1>
         </div>
