@@ -172,7 +172,7 @@ const Panel = ({ title, children, className = "" }: any) => (
       <span className="text-sm font-bold tracking-widest text-slate-200">{title}</span>
       <span className="text-slate-500 text-sm">+</span>
     </div>
-    <div className="p-4 flex-1 overflow-hidden relative z-10">
+    <div className="p-4 flex-1 overflow-hidden relative z-10 flex flex-col">
       {children}
     </div>
   </div>
