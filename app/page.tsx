@@ -72,7 +72,16 @@ const TRANSLATIONS = {
     rename_title: "MODIFY CODENAME",
     rename_placeholder: "NEW CODENAME (MAX 16 CHARS)",
     rename_btn: "[ CONFIRM CHANGE ]",
-    rename_updating: "UPDATING RECORDS..."
+    rename_updating: "UPDATING RECORDS...",
+    forgot_password_link: "FORGOT ACCESS KEY?",
+    forgot_password_title: "RECOVER ACCESS KEY",
+    forgot_password_placeholder: "ENTER REGISTERED EMAIL",
+    forgot_password_btn: "[ SEND RECOVERY LINK ]",
+    forgot_password_sent: "> Recovery link sent. Check your inbox.",
+    reset_password_title: "SET NEW ACCESS KEY",
+    reset_new_password_placeholder: "NEW ACCESS KEY (MIN 6 CHARS)",
+    reset_password_btn: "[ CONFIRM NEW KEY ]",
+    reset_password_success: "> Access key updated. Redirecting to login..."
   },
 
   zh: {
@@ -135,7 +144,16 @@ const TRANSLATIONS = {
     rename_title: "更改专属代号",
     rename_placeholder: "输入新代号（16字符内）",
     rename_btn: "[ 确认更改 ]",
-    rename_updating: "正在同步历史记录..."
+    rename_updating: "正在同步历史记录...",
+    forgot_password_link: "忘记访问密钥？",
+    forgot_password_title: "找回访问密钥",
+    forgot_password_placeholder: "请输入注册时使用的邮箱",
+    forgot_password_btn: "[ 发送找回链接 ]",
+    forgot_password_sent: "> 找回链接已发送，请检查您的邮箱。",
+    reset_password_title: "设置新的访问密钥",
+    reset_new_password_placeholder: "新访问密钥（至少6位）",
+    reset_password_btn: "[ 确认新密钥 ]",
+    reset_password_success: "> 密钥已更新，正在跳转登录..."
   }
 };
 
@@ -322,6 +340,25 @@ const TerminalLogin = ({ onLoginSuccess, t }: { onLoginSuccess: (p: any) => void
   const [status, setStatus] = useState<"idle"|"authenticating"|"success">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [successName, setSuccessName] = useState(""); // 新增：登录/注册成功后展示的名字
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStatus, setForgotStatus] = useState<"idle"|"sending"|"sent">("idle");
+  const [forgotError, setForgotError] = useState("");
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail) { setForgotError("> [ERROR] Missing email."); return; }
+    setForgotStatus("sending"); setForgotError("");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: "https://onychinus.net"
+      });
+      if (error) throw error;
+      setForgotStatus("sent");
+    } catch (err: any) {
+      setForgotStatus("idle");
+      setForgotError(`> [ERROR] ${err.message}`);
+    }
+  };
 
   const handleAuth = async () => {
     if (!email || !password || (isRegistering && !codename)) { setErrorMsg("> [ERROR] Missing fields."); return; }
@@ -401,6 +438,15 @@ setTimeout(() => onLoginSuccess(profile), 2000);
             </div>
 
             {errorMsg && <div className="text-[#9e3f4d] text-sm font-bold animate-pulse">{errorMsg}</div>}
+
+            {!isRegistering && (
+              <div
+                onClick={() => { setIsForgotOpen(true); setForgotEmail(""); setForgotStatus("idle"); setForgotError(""); }}
+                className="text-xs text-slate-500 hover:text-[#9e3f4d] cursor-pointer text-right -mt-2 tracking-wider"
+              >
+                {t.forgot_password_link}
+              </div>
+            )}
             
             <button onClick={handleAuth} className="mt-2 w-full py-3 md:py-4 bg-[#11141c] border-2 border-slate-700 text-slate-200 text-sm md:text-base font-bold tracking-widest hover:border-[#7a2f3a] hover:bg-[#7a2f3a] hover:text-[#0a0d14] transition-all cursor-pointer">
               {t.connect_btn}
@@ -421,6 +467,91 @@ setTimeout(() => onLoginSuccess(profile), 2000);
               <span className="text-[#9e3f4d] text-xl font-bold mt-4 block break-words">WELCOME, {successName || "AGENT"}.</span>
             </div>
           </div>
+        )}
+      </motion.div>
+
+      <AnimatePresence>
+        {isForgotOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9995] flex items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md px-4">
+            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="relative w-full max-w-[420px] bg-[#0c1017] border border-slate-600 p-6 font-mono text-slate-200 shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-3 mb-4">
+                <span className="text-sm font-bold tracking-widest text-slate-300">[ {t.forgot_password_title} ]</span>
+                <button onClick={() => setIsForgotOpen(false)} className="hover:text-white cursor-pointer"><X size={20}/></button>
+              </div>
+
+              {forgotStatus === "sent" ? (
+                <div className="text-sm text-[#9e3f4d] font-bold py-4">{t.forgot_password_sent}</div>
+              ) : (
+                <>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder={t.forgot_password_placeholder}
+                    style={{ fontSize: 16 }}
+                    className="w-full bg-[#0a0d14] border border-slate-700 p-3 text-sm text-slate-100 outline-none focus:border-[#7a2f3a] mb-4"
+                  />
+                  {forgotError && <div className="text-[#9e3f4d] text-sm font-bold mb-4">{forgotError}</div>}
+                  <button
+                    onClick={handleForgotPassword}
+                    disabled={forgotStatus === "sending" || !forgotEmail}
+                    className="w-full bg-[#11141c] border-2 border-slate-600 text-slate-200 text-sm font-bold py-3 hover:border-[#7a2f3a] hover:text-[#7a2f3a] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {forgotStatus === "sending" ? t.verifying : t.forgot_password_btn}
+                  </button>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const ResetPasswordScreen = ({ t, onDone }: any) => {
+  const [newPassword, setNewPassword] = useState("");
+  const [status, setStatus] = useState<"idle"|"updating"|"success">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleReset = async () => {
+    if (!newPassword || newPassword.length < 6) { setErrorMsg("> [ERROR] Password must be at least 6 characters."); return; }
+    setStatus("updating"); setErrorMsg("");
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setStatus("success");
+      await supabase.auth.signOut();
+      setTimeout(() => onDone(), 2500);
+    } catch (err: any) {
+      setStatus("idle");
+      setErrorMsg(`> [ERROR] ${err.message}`);
+    }
+  };
+
+  return (
+    <div className="h-screen w-screen bg-[#0a0d14] flex items-center justify-center font-mono relative overflow-hidden px-4">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#12161f_0%,#0a0d14_100%)] z-0"></div>
+      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-20 w-full max-w-[500px] border border-slate-700 bg-[#0c1017]/95 backdrop-blur-md p-8 md:p-12 shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+        <div className="flex flex-col items-center mb-10 gap-4">
+          {status === "success" ? <Unlock size={40} className="text-[#9e3f4d]" /> : <KeyRound size={40} className="text-slate-400" />}
+          <div className="text-xl md:text-2xl font-bold tracking-[0.2em] text-slate-100 mt-2 text-center">{t.reset_password_title}</div>
+        </div>
+
+        {status !== "success" ? (
+          <div className="flex flex-col gap-6">
+            <ScrambleInput value={newPassword} onChange={setNewPassword} placeholder={t.reset_new_password_placeholder} />
+            {errorMsg && <div className="text-[#9e3f4d] text-sm font-bold animate-pulse">{errorMsg}</div>}
+            <button
+              onClick={handleReset}
+              disabled={status === "updating"}
+              className="mt-2 w-full py-3 md:py-4 bg-[#11141c] border-2 border-slate-700 text-slate-200 text-sm md:text-base font-bold tracking-widest hover:border-[#7a2f3a] hover:bg-[#7a2f3a] hover:text-[#0a0d14] transition-all cursor-pointer disabled:opacity-40"
+            >
+              {status === "updating" ? t.verifying : t.reset_password_btn}
+            </button>
+          </div>
+        ) : (
+          <div className="text-center text-[#9e3f4d] text-base font-bold py-8">{t.reset_password_success}</div>
         )}
       </motion.div>
     </div>
@@ -1339,13 +1470,27 @@ export default function AppRoot() {
   const [accessGranted, setAccessGranted] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [lang, setLang] = useState<"zh" | "en">("zh");
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const t = TRANSLATIONS[lang];
+
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecoveryMode(true);
+      }
+    });
+    return () => { listener?.subscription.unsubscribe(); };
+  }, []);
 
   const handleLogout = async () => { 
     await supabase.auth.signOut(); 
     setCurrentUser(null); 
     setAccessGranted(false); 
   };
+
+  if (isRecoveryMode) {
+    return <ResetPasswordScreen t={t} onDone={() => { setIsRecoveryMode(false); setCurrentUser(null); setAccessGranted(true); }} />;
+  }
 
   return (
     <AnimatePresence mode="wait">
