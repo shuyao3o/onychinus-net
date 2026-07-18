@@ -751,7 +751,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
       )}
 
       {step === "read" && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[90dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[95dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
           <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-start gap-3">
               <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
               <div className="flex items-center gap-5 shrink-0 mt-0.5">
@@ -759,8 +759,9 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
               <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
             </div>
           </div>
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0 gap-0">
-            <div className="flex-1 min-h-[100px] overflow-y-auto pr-4 custom-scrollbar text-base md:text-lg mb-4 text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
+
+          <div className="flex-1 flex flex-col overflow-y-auto min-h-0 gap-0 custom-scrollbar pr-1">
+            <div className="mb-4 text-base md:text-lg text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
                 <div className="text-sm text-slate-400 flex flex-wrap items-center justify-between gap-2 mb-6 border-b border-slate-800/50 pb-3 font-bold">
                 <span>OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
                 <div className="flex items-center gap-4">
@@ -788,7 +789,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
                 {isRefreshingReplies ? t.refreshing : t.refresh_replies}
               </button>
             </div>
-            <div className="max-h-[200px] shrink-0 overflow-y-auto pr-3 custom-scrollbar space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-4 bg-[#0a0d14]/40 p-4 rounded-sm">
+            <div className="space-y-3 text-sm text-slate-400 border-l-4 border-slate-700/50 pl-4 mb-2 bg-[#0a0d14]/40 p-4 rounded-sm">
               {replies.map((r, idx) => {
                 const isReplyAuthor = r.author_codename === signal.author_codename;
                 const isMyReply = r.author_id ? currentUser?.id === r.author_id : (!!currentUser?.codename && currentUser.codename === r.author_codename);
@@ -829,15 +830,16 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
               })}
               {replies.length === 0 && <div className="italic text-slate-500 font-bold">{t.no_replies}</div>}
             </div>
+          </div>
 
+          <div className="shrink-0 border-t border-slate-700/50 pt-3 md:pt-4 mt-3 bg-[#0c1017]">
             {replyTarget && (
               <div className="flex items-center justify-between bg-[#11141c] border border-slate-700/60 px-3 py-2 mb-2 text-xs text-slate-400 rounded-sm">
                 <span className="truncate">{t.reply_to} #{replyTarget.floor} <span className="text-[#9e3f4d] font-bold">[{replyTarget.author_codename}]</span>: "{replyTarget.snippet}"</span>
                 <button onClick={() => setReplyTarget(null)} className="ml-3 shrink-0 text-slate-500 hover:text-white cursor-pointer"><X size={14}/></button>
               </div>
             )}
-
-            <form onSubmit={(e) => { e.preventDefault(); handleSendReply(); }} className="flex flex-col md:flex-row items-stretch md:items-end gap-2 md:gap-3 border-t border-slate-700/50 pt-3 md:pt-4 shrink-0">
+            <form onSubmit={(e) => { e.preventDefault(); handleSendReply(); }} className="flex flex-col md:flex-row items-stretch md:items-end gap-2 md:gap-3">
               <textarea
                 ref={textareaRef}
                 rows={1}
