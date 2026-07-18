@@ -846,6 +846,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={t.reply_placeholder}
+                style={{ fontSize: 16 }}
                 className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 md:p-4 outline-none text-sm md:text-base text-slate-100 font-bold focus:border-slate-500 cursor-text rounded-sm resize-none overflow-y-auto custom-scrollbar leading-relaxed max-h-[80px] md:max-h-[140px]"
               />
               <button type="submit" className="shrink-0 w-full md:w-auto px-4 py-2.5 md:py-4 bg-[#11141c] border border-slate-600 text-slate-300 font-bold text-sm hover:border-[#7a2f3a] hover:text-[#7a2f3a] cursor-pointer">SEND</button>
