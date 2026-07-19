@@ -29,7 +29,7 @@ const TRANSLATIONS = {
     nominal: "SYSTEM NOMINAL",
     anno_title: "ANNOUNCEMENTS",
     anno_1: "[CALENDAR] Celebrating Sylus's 2nd Anniversary!",
-    anno_2: "[UPDATE] Onychinus Net v2.1 Online. New: Threaded replies (Quote), reply notifications, and timestamped transmissions.",
+    anno_2: "[UPDATE] Onychinus Net v2.2 Online. New: Sector Access.",
     my_signals: "MY ARCHIVES",
     radar_active: "Radar active. Signals intercepted.",
     no_records: "> No records found.",
@@ -101,7 +101,7 @@ const TRANSLATIONS = {
     nominal: "各项指标正常",
     anno_title: "暗网公告",
     anno_1: "[日历] 庆祝秦彻上线二周年！",
-    anno_2: "[系统] 暗网终端 v2.1 现已上线。新增：回帖引用、消息回复提醒、发帖与回帖时间戳显示。",
+    anno_2: "[系统] 暗网终端 v2.2 现已上线。新增：分区频道。",
     my_signals: "我的传输档案",
     radar_active: "雷达运转中。已拦截频段。",
     no_records: "> 尚未上传任何通讯记录。",
@@ -1032,33 +1032,33 @@ const BoardModal = ({ board, isOpen, onClose, posts, t, onOpenSignal, onOpenComp
   const label = isStaff ? t.sector_staff : t.sector_menu;
   const accent = isStaff ? "text-slate-300" : "text-[#9e3f4d]";
   return <AnimatePresence>{isOpen && (
-    <motion.div key={`board-modal-${board}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9990] flex items-start md:items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md px-4 overflow-y-auto py-6">
-      <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="relative w-full max-w-[700px] min-h-[500px] max-h-[90dvh] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]">
-        <div className="flex justify-between items-center border-b border-slate-700 pb-4 mb-5 shrink-0">
-          <span className={`text-sm md:text-lg font-bold tracking-widest ${accent}`}>[ {label} ]</span>
-          <button onClick={onClose} className="hover:text-white cursor-pointer"><X size={22}/></button>
-        </div>
+        <motion.div key={`board-modal-${board}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9990] flex items-start md:items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md px-2 md:px-4 overflow-y-auto py-4 md:py-6">
+          <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="relative w-full max-w-[700px] min-h-[500px] max-h-[95dvh] md:max-h-[90dvh] my-auto bg-[#0c1017] border border-slate-600 p-4 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+            <div className="flex justify-between items-center border-b border-slate-700 pb-4 mb-5 shrink-0">
+              <span className={`text-base md:text-lg font-bold tracking-widest ${accent}`}>[ {label} ]</span>
+              <button onClick={onClose} className="hover:text-white cursor-pointer"><X size={22}/></button>
+            </div>
 
-        <button onClick={onOpenCompose} className="mb-5 shrink-0 w-full bg-[#11141c] border-2 border-slate-600 text-slate-200 text-sm font-bold py-3 hover:border-[#7a2f3a] hover:text-[#7a2f3a] transition-colors cursor-pointer">
-          {t.board_new_post}
-        </button>
+            <button onClick={onOpenCompose} className="mb-5 shrink-0 w-full bg-[#11141c] border-2 border-slate-600 text-slate-200 text-sm md:text-sm font-bold py-3 hover:border-[#7a2f3a] hover:text-[#7a2f3a] transition-colors cursor-pointer">
+              {t.board_new_post}
+            </button>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
-          {posts.length === 0 && <div className="text-sm text-slate-500 font-bold italic">{t.board_no_posts}</div>}
-          {posts.map((sig: any) => (
-            <div key={sig.id} onClick={() => onOpenSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-4 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors">
-              <div className="flex justify-between items-start gap-3 mb-2">
-                <span className="text-sm md:text-base text-slate-200 font-bold break-words min-w-0">{sig.title || "UNTITLED_RECORD"}</span>
-                {sig.passkey && <Lock size={14} className="text-[#9e3f4d] shrink-0 mt-1"/>}
-              </div>
-              <div className="text-xs text-slate-500 flex justify-between items-center font-bold">
-                <span>{sig.author_codename} · {formatDateTime(sig.created_at)}</span>
-                {board === "menu" && (
-                  <span className="flex items-center gap-1.5 text-slate-500">
-                    <Heart size={13} className={sig.likes_count > 0 ? "fill-[#9e3f4d] text-[#9e3f4d]" : ""} />
-                    {sig.likes_count || 0}
-                  </span>
-                )}
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1 md:pr-2">
+              {posts.length === 0 && <div className="text-sm text-slate-500 font-bold italic">{t.board_no_posts}</div>}
+              {posts.map((sig: any) => (
+                <div key={sig.id} onClick={() => onOpenSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-4 md:p-4 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors">
+                  <div className="flex justify-between items-start gap-3 mb-2">
+                    <span className="text-base md:text-base text-slate-200 font-bold break-words min-w-0 leading-relaxed">{sig.title || "UNTITLED_RECORD"}</span>
+                    {sig.passkey && <Lock size={14} className="text-[#9e3f4d] shrink-0 mt-1"/>}
+                  </div>
+                  <div className="text-xs md:text-xs text-slate-500 flex justify-between items-center font-bold">
+                    <span>{sig.author_codename} · {formatDateTime(sig.created_at)}</span>
+                    {board === "menu" && (
+                      <span className="flex items-center gap-1.5 text-slate-500">
+                        <Heart size={13} className={sig.likes_count > 0 ? "fill-[#9e3f4d] text-[#9e3f4d]" : ""} />
+                        {sig.likes_count || 0}
+                      </span>
+                    )}
               </div>
             </div>
           ))}
