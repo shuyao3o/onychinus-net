@@ -81,7 +81,13 @@ const TRANSLATIONS = {
     reset_password_title: "SET NEW ACCESS KEY",
     reset_new_password_placeholder: "NEW ACCESS KEY (MIN 6 CHARS)",
     reset_password_btn: "[ CONFIRM NEW KEY ]",
-    reset_password_success: "> Access key updated. Redirecting to login..."
+    reset_password_success: "> Access key updated. Redirecting to login...",
+    edit_btn: "[ EDIT ]",
+    edit_title_placeholder: "TITLE (OPTIONAL)",
+    edit_text_placeholder: "EDIT TRANSMISSION CONTENT...",
+    edit_save_btn: "[ SAVE CHANGES ]",
+    edit_cancel_btn: "CANCEL",
+    edited_tag: "(EDITED)"
   },
 
   zh: {
@@ -153,7 +159,13 @@ const TRANSLATIONS = {
     reset_password_title: "设置新的访问密钥",
     reset_new_password_placeholder: "新访问密钥（至少6位）",
     reset_password_btn: "[ 确认新密钥 ]",
-    reset_password_success: "> 密钥已更新，正在跳转登录..."
+    reset_password_success: "> 密钥已更新，正在跳转登录...",
+    edit_btn: "[ 编辑 ]",
+    edit_title_placeholder: "标题（可选）",
+    edit_text_placeholder: "编辑正文内容...",
+    edit_save_btn: "[ 保存修改 ]",
+    edit_cancel_btn: "取消",
+    edited_tag: "（已编辑）"
   }
 };
 
@@ -561,7 +573,7 @@ const ResetPasswordScreen = ({ t, onDone }: any) => {
 // ==========================================
 // 5. 弹窗与交互模块 (解密阅读弹窗)
 // ==========================================
-const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightReplyId, onConsumeHighlight }: any) => {
+const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightReplyId, onConsumeHighlight, onDeleted, onUpdated }: any) => {
   const dec = useScrambleText(signal.text);
   const [replies, setReplies] = useState<any[]>([]);
   const [input, setInput] = useState("");
@@ -610,6 +622,11 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
   }, [input]);
 
   const isAuthor = signal.author_id ? currentUser?.id === signal.author_id : currentUser?.codename === signal.author_codename;
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editText, setEditText] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
 
   const fetchR = async (manual = false) => { 
     if (manual) setIsRefreshingReplies(true);
@@ -677,6 +694,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
   const handleDelete = async () => {
     if (confirm("DANGER: 您确定要从暗网彻底销毁该通讯记录吗？此操作不可逆。")) {
       await supabase.from("signals").delete().eq("id", signal.id);
+      onDeleted && onDeleted(signal.id); // 本地立即摘除，不等网络刷新
       onRefresh();
       onClose();
     }
@@ -688,6 +706,17 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
       await supabase.from("replies").delete().eq("id", replyId);
       fetchR();
     }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editText.trim()) { alert("> [ERROR] 正文内容不能为空。"); return; }
+    setIsSavingEdit(true);
+    const updatedFields = { title: editTitle.trim(), text: editText, edited: true };
+    const { error } = await supabase.from("signals").update(updatedFields).eq("id", signal.id);
+    setIsSavingEdit(false);
+    if (error) { alert(`> [ERROR] ${error.message}`); return; }
+    onUpdated && onUpdated({ id: signal.id, ...updatedFields }); // 本地立即更新
+    setIsEditing(false);
   };
 
   const startQuote = (r: any, floor: number) => {
@@ -752,9 +781,14 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
 
       {step === "read" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[95dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
-          <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-start gap-3">
+            <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-start gap-3">
               <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
-              <div className="flex items-center gap-5 shrink-0 mt-0.5">
+              <div className="flex items-center gap-4 shrink-0 mt-0.5">
+              {isAuthor && !isEditing && (
+                <button onClick={() => { setEditTitle(signal.title || ""); setEditText(signal.text || ""); setIsEditing(true); }} className="text-slate-400 hover:text-[#9e3f4d] font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer">
+                  <FileText size={14}/> {t.edit_btn}
+                </button>
+              )}
               {isAuthor && <button onClick={handleDelete} className="text-[#802020] hover:text-red-500 font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer"><Trash2 size={14}/> [ PURGE ]</button>}
               <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
             </div>
@@ -771,12 +805,43 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
                       <span className={`text-xs font-bold ${isLiked ? "text-[#9e3f4d]" : "text-slate-500"}`}>{likesCount}</span>
                     </button>
                   )}
-                  {signal.created_at && <span className="text-slate-500 text-xs">{formatDateTime(signal.created_at)}</span>}
+                  {signal.created_at && <span className="text-slate-500 text-xs">{formatDateTime(signal.created_at)}{signal.edited ? ` ${t.edited_tag}` : ""}</span>}
                 </div>
               </div>
 
-              {dec}
+              {isEditing ? (
+                <div className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder={t.edit_title_placeholder}
+                    style={{ fontSize: 16 }}
+                    className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 outline-none text-sm text-slate-100 font-bold focus:border-slate-500 rounded-sm"
+                  />
+                  <textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    placeholder={t.edit_text_placeholder}
+                    rows={8}
+                    style={{ fontSize: 16 }}
+                    className="w-full bg-[#0a0d14]/60 border border-slate-700/50 p-3 outline-none text-sm text-slate-100 focus:border-slate-500 rounded-sm resize-none leading-relaxed"
+                  />
+                  <div className="flex gap-3">
+                    <button onClick={handleSaveEdit} disabled={isSavingEdit} className="flex-1 bg-[#11141c] border-2 border-slate-600 text-slate-200 text-sm font-bold py-2.5 hover:border-[#7a2f3a] hover:text-[#7a2f3a] transition-colors cursor-pointer disabled:opacity-40">
+                      {isSavingEdit ? t.uploading : t.edit_save_btn}
+                    </button>
+                    <button onClick={() => setIsEditing(false)} className="px-5 text-slate-400 hover:text-white text-sm font-bold cursor-pointer">
+                      {t.edit_cancel_btn}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                dec
+              )}
             </div>
+
+
 
             <div className="flex items-center justify-between mb-2 shrink-0 px-1">
               <span className="text-xs text-slate-500 font-bold tracking-widest">RESPONSE LOG ({replies.length})</span>
@@ -1194,6 +1259,20 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
 
   const mySignals = cloudPool.filter(s => s.author_id ? s.author_id === currentUser?.id : s.author_codename === currentUser?.codename);
 
+  const handleSignalDeleted = (id: string) => {
+    setCloudPool(prev => prev.filter((s: any) => s.id !== id));
+    setDisplaySignals(prev => prev.filter((s: any) => s.id !== id));
+    setRepliedSignals(prev => prev.filter((s: any) => s.id !== id));
+  };
+
+  const handleSignalUpdated = (updated: any) => {
+    setCloudPool(prev => prev.map((s: any) => s.id === updated.id ? { ...s, ...updated } : s));
+    setDisplaySignals(prev => prev.map((s: any) => s.id === updated.id ? { ...s, ...updated } : s));
+    setRepliedSignals(prev => prev.map((s: any) => s.id === updated.id ? { ...s, ...updated } : s));
+    setActiveSignal((prev: any) => prev && prev.id === updated.id ? { ...prev, ...updated } : prev);
+  };
+
+
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [renameInput, setRenameInput] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
@@ -1391,7 +1470,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
         </aside>
       </main>
 
-      <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onClose={() => setActiveSignal(null)} onRefresh={fetchSignals} highlightReplyId={highlightReplyId} onConsumeHighlight={() => setHighlightReplyId(null)} />}</AnimatePresence>
+      <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onClose={() => setActiveSignal(null)} onRefresh={fetchSignals} highlightReplyId={highlightReplyId} onConsumeHighlight={() => setHighlightReplyId(null)} onDeleted={handleSignalDeleted} onUpdated={handleSignalUpdated} />}</AnimatePresence>
 
       <InjectPanel 
         isOpen={isInjectModalOpen} 
