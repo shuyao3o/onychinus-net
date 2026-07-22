@@ -693,12 +693,16 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
 
   const handleDelete = async () => {
     if (confirm("DANGER: 您确定要从暗网彻底销毁该通讯记录吗？此操作不可逆。")) {
-      await supabase.from("signals").delete().eq("id", signal.id);
+      const { error } = await supabase.from("signals").delete().eq("id", signal.id);
+      if (error) {
+        alert(`> [ERROR] 删除失败：${error.message}`);
+        return;
+      }
       onDeleted && onDeleted(signal.id); // 本地立即摘除，不等网络刷新
-      onRefresh();
       onClose();
     }
   };
+
 
   const handleDeleteReply = async (replyId: string) => {
     if (confirm("DANGER: 您确定要销毁这条回复记录吗？此操作不可逆。")) {
