@@ -1048,8 +1048,15 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t, board = "rada
       author_codename: currentUser?.codename || "UNKNOWN", author_id: currentUser?.id || null, access_code: accessCode, passkey: isEncrypted ? passkey : null,
       board
     });
-    if(!error) { setGeneratedCode(accessCode); setTimeout(() => setStatus("success"), 1000); }
+    if(!error) { 
+      setGeneratedCode(accessCode); 
+      setTimeout(() => setStatus("success"), 1000); 
+    } else {
+      setStatus("idle");
+      alert(`> [ERROR] 数据包上传失败：${error.message}\n\n请检查网络连接后重试。若反复出现，请联系管理员。`);
+    }
   };
+
 
   const closeAndReset = () => { setStatus("idle"); setTitle(""); setText(""); setPasskey(""); setIsEncrypted(false); setGeneratedCode(""); onRefresh(); onClose(); };
 
