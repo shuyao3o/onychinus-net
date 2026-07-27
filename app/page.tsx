@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Crosshair, X, Terminal, Cpu, Zap, Wifi, Shield, 
-Activity, Radio as RadioIcon, Code, Lock, Unlock, Eye, EyeOff, Search, KeyRound, Power, RefreshCw, FileText, User, Bell, Trash2, Reply, Heart, Users, UtensilsCrossed
+Activity, Radio as RadioIcon, Code, Lock, Unlock, Eye, EyeOff, Search, KeyRound, Power, RefreshCw, FileText, User, Bell, Trash2, Reply, Heart, Users, UtensilsCrossed, Image as ImageIcon
 } from "lucide-react";
 import { supabase } from "@/utils/supabase";
 
@@ -860,7 +860,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
 
       {step === "read" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[95dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
-            <div className="flex justify-between border-b border-slate-700/50 pb-4 mb-6 items-start gap-3">
+            <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-6 px-6 pt-6 pb-4 md:-mx-8 md:-mt-8 md:px-8 md:pt-8 flex justify-between border-b border-slate-700/50 items-start gap-3 bg-[#1c1319]/95 backdrop-blur-sm">
               <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
               <div className="flex items-center gap-4 shrink-0 mt-0.5">
               {isAuthor && !isEditing && (
@@ -872,8 +872,10 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
               {!isAuthor && signal.board === "gallery" && (
                 <button onClick={handleReport} className="text-slate-500 hover:text-[#9e3f4d] font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer">{t.report_btn}</button>
               )}
+              <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
             </div>
           </div>
+
 
           <div className="flex-1 flex flex-col overflow-y-auto min-h-0 gap-0 custom-scrollbar pr-1">
             <div className="mb-4 text-base md:text-lg text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
@@ -1270,22 +1272,43 @@ const BoardModal = ({ board, isOpen, onClose, posts, t, onOpenSignal, onOpenComp
               {t.board_new_post}
             </button>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1 md:pr-2">
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 md:pr-2">
               {posts.length === 0 && <div className="text-sm text-slate-500 font-bold italic">{t.board_no_posts}</div>}
-              {posts.map((sig: any) => (
-                <div key={sig.id} onClick={() => onOpenSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-4 md:p-4 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors">
-                  <div className="flex gap-3">
-                    {board === "gallery" && sig.image_urls && sig.image_urls.length > 0 && (
-                      <img src={sig.image_urls[0]} alt="" className="w-16 h-16 object-cover rounded-sm border border-slate-700 shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
+
+              {board === "gallery" ? (
+                <div className="columns-2 md:columns-3 gap-3">
+                  {posts.map((sig: any) => (
+                    <div key={sig.id} onClick={() => onOpenSignal(sig)} className="mb-3 break-inside-avoid cursor-pointer bg-[#0a0d14] border border-slate-700 hover:border-[#7a2f3a] rounded-sm overflow-hidden transition-colors">
+                      {sig.image_urls && sig.image_urls[0] && (
+                        <img src={sig.image_urls[0]} alt="" className="w-full block" loading="lazy" />
+                      )}
+                      <div className="p-2">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className="text-xs text-slate-200 font-bold break-words min-w-0 leading-tight">{sig.title || "UNTITLED_RECORD"}</span>
+                          {sig.passkey && <Lock size={12} className="text-[#9e3f4d] shrink-0 mt-0.5"/>}
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold">
+                          <span className="truncate">{sig.author_codename}</span>
+                          <span className="flex items-center gap-1 shrink-0">
+                            <Heart size={11} className={sig.likes_count > 0 ? "fill-[#9e3f4d] text-[#9e3f4d]" : ""} />
+                            {sig.likes_count || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {posts.map((sig: any) => (
+                    <div key={sig.id} onClick={() => onOpenSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-4 md:p-4 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors">
                       <div className="flex justify-between items-start gap-3 mb-2">
                         <span className="text-base md:text-base text-slate-200 font-bold break-words min-w-0 leading-relaxed">{sig.title || "UNTITLED_RECORD"}</span>
                         {sig.passkey && <Lock size={14} className="text-[#9e3f4d] shrink-0 mt-1"/>}
                       </div>
                       <div className="text-xs md:text-xs text-slate-500 flex justify-between items-center font-bold">
                         <span>{sig.author_codename} · {formatDateTime(sig.created_at)}</span>
-                        {(board === "menu" || board === "gallery") && (
+                        {board === "menu" && (
                           <span className="flex items-center gap-1.5 text-slate-500">
                             <Heart size={13} className={sig.likes_count > 0 ? "fill-[#9e3f4d] text-[#9e3f4d]" : ""} />
                             {sig.likes_count || 0}
@@ -1293,10 +1316,11 @@ const BoardModal = ({ board, isOpen, onClose, posts, t, onOpenSignal, onOpenComp
                         )}
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-        </div>
+              )}
+            </div>
+
       </motion.div>
     </motion.div>
   )}</AnimatePresence>;
@@ -1625,21 +1649,21 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
           </Panel>
 
           <Panel title={t.sectors_title} className="flex-shrink-0">
-            <div className="grid grid-cols-3 gap-2 md:gap-3">
-              <button onClick={() => setOpenBoard("staff")} className="flex flex-col items-center justify-center gap-2 p-3 md:p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
+              <button onClick={() => setOpenBoard("staff")} className="flex flex-col items-center justify-center gap-2 p-3 md:p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors overflow-hidden">
                 <Users size={20}/>
-                <span className="text-[10px] md:text-xs font-bold tracking-wider text-center leading-tight">{t.sector_staff}</span>
-                <span className="text-[9px] text-slate-600 text-center leading-tight">{t.sector_staff_sub}</span>
+                <span className="text-[10px] md:text-xs font-bold tracking-wider text-center whitespace-nowrap">{t.sector_staff}</span>
+                <span className="text-[9px] text-slate-600 text-center whitespace-nowrap">{t.sector_staff_sub}</span>
               </button>
-              <button onClick={() => setOpenBoard("menu")} className="flex flex-col items-center justify-center gap-2 p-3 md:p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors">
+              <button onClick={() => setOpenBoard("menu")} className="flex flex-col items-center justify-center gap-2 p-3 md:p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors overflow-hidden">
                 <UtensilsCrossed size={20}/>
-                <span className="text-[10px] md:text-xs font-bold tracking-wider text-center leading-tight">{t.sector_menu}</span>
-                <span className="text-[9px] text-slate-600 text-center leading-tight">{t.sector_menu_sub}</span>
+                <span className="text-[10px] md:text-xs font-bold tracking-wider text-center whitespace-nowrap">{t.sector_menu}</span>
+                <span className="text-[9px] text-slate-600 text-center whitespace-nowrap">{t.sector_menu_sub}</span>
               </button>
-              <button onClick={() => setOpenBoard("gallery")} className="flex flex-col items-center justify-center gap-2 p-3 md:p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors">
-                <FileText size={20}/>
-                <span className="text-[10px] md:text-xs font-bold tracking-wider text-center leading-tight">{t.sector_gallery}</span>
-                <span className="text-[9px] text-slate-600 text-center leading-tight">{t.sector_gallery_sub}</span>
+              <button onClick={() => setOpenBoard("gallery")} className="col-span-2 md:col-span-1 flex flex-col items-center justify-center gap-2 p-3 md:p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors overflow-hidden">
+                <ImageIcon size={20}/>
+                <span className="text-[10px] md:text-xs font-bold tracking-wider text-center whitespace-nowrap">{t.sector_gallery}</span>
+                <span className="text-[9px] text-slate-600 text-center whitespace-nowrap">{t.sector_gallery_sub}</span>
               </button>
             </div>
           </Panel>
