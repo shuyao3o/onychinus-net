@@ -87,7 +87,17 @@ const TRANSLATIONS = {
     edit_text_placeholder: "EDIT TRANSMISSION CONTENT...",
     edit_save_btn: "[ SAVE CHANGES ]",
     edit_cancel_btn: "CANCEL",
-    edited_tag: "(EDITED)"
+    edited_tag: "(EDITED)",
+    sector_gallery: "GALLERY",
+    sector_gallery_sub: "Fanart Collection",
+    upload_images: "ATTACH IMAGES (MAX 4)",
+    image_uploading: "UPLOADING IMAGES...",
+    image_too_large: "Image exceeds 10MB limit, skipped:",
+    gallery_text_optional: "CAPTION (OPTIONAL)",
+    gallery_need_image: "Please attach at least one image.",
+    report_btn: "REPORT",
+    report_confirm: "Report this content for review?",
+    report_sent: "> Report submitted. Thank you."
   },
 
   zh: {
@@ -165,7 +175,17 @@ const TRANSLATIONS = {
     edit_text_placeholder: "编辑正文内容...",
     edit_save_btn: "[ 保存修改 ]",
     edit_cancel_btn: "取消",
-    edited_tag: "（已编辑）"
+    edited_tag: "（已编辑）",
+    sector_gallery: "收藏室",
+    sector_gallery_sub: "艺术品展柜",
+    upload_images: "上传图片（最多4张）",
+    image_uploading: "正在上传图片...",
+    image_too_large: "图片超过10MB限制，已跳过：",
+    gallery_text_optional: "配文（可选）",
+    gallery_need_image: "请至少上传一张图片。",
+    report_btn: "举报",
+    report_confirm: "确认举报该内容以供审核？",
+    report_sent: "> 举报已提交，感谢反馈。"
   }
 };
 
@@ -270,6 +290,45 @@ const formatDateTime = (iso?: string) => {
   const pad = (n: number) => n.toString().padStart(2, "0");
   return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
+
+// 浏览器端图片压缩：限制最长边 1600px，输出 JPEG，控制体积在合理范围
+const compressImage = (file: File): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.onload = () => {
+        const maxSide = 1600;
+        let { width, height } = img;
+        if (width > maxSide || height > maxSide) {
+          if (width > height) { height = Math.round(height * maxSide / width); width = maxSide; }
+          else { width = Math.round(width * maxSide / height); height = maxSide; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob); else reject(new Error("Compression failed"));
+        }, "image/jpeg", 0.82);
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+// 上传单张图片到 Supabase Storage，返回公开访问链接
+const uploadImageToStorage = async (blob: Blob, userId: string): Promise<string | null> => {
+  const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.jpg`;
+  const { error } = await supabase.storage.from("signal-images").upload(fileName, blob, { contentType: "image/jpeg" });
+  if (error) { console.error("Upload error:", error); return null; }
+  const { data } = supabase.storage.from("signal-images").getPublicUrl(fileName);
+  return data?.publicUrl || null;
+};
+
 
 
 // ==========================================
@@ -712,6 +771,12 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
     }
   };
 
+  const handleReport = async () => {
+    if (!confirm(t.report_confirm)) return;
+    await supabase.from("reports").insert({ signal_id: signal.id, reporter_id: currentUser?.id || null, reason: "user_report" });
+    alert(t.report_sent);
+  };
+
   const handleSaveEdit = async () => {
     if (!editText.trim()) { alert("> [ERROR] 正文内容不能为空。"); return; }
     setIsSavingEdit(true);
@@ -755,9 +820,19 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
               <span className={`text-xs font-bold ${isLiked ? "text-[#9e3f4d]" : "text-slate-500"}`}>{likesCount}</span>
             </button>
           )}
-          <div className="text-sm text-slate-400 mb-8 italic border-l-4 border-slate-700 pl-4 bg-[#11141c] p-4 rounded-sm leading-relaxed">
-            "{signal.text.substring(0, 50)}{signal.text.length > 50 ? "..." : ""}"
-          </div>
+          {signal.image_urls && signal.image_urls.length > 0 && (
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {signal.image_urls.slice(0, 4).map((url: string, idx: number) => (
+                <img key={idx} src={url} alt="" className="w-full aspect-square object-cover border border-slate-700 rounded-sm" />
+              ))}
+            </div>
+          )}
+          {signal.text && (
+            <div className="text-sm text-slate-400 mb-8 italic border-l-4 border-slate-700 pl-4 bg-[#11141c] p-4 rounded-sm leading-relaxed">
+              "{signal.text.substring(0, 50)}{signal.text.length > 50 ? "..." : ""}"
+            </div>
+          )}
+
           <button onClick={handleDecryptClick} className="w-full bg-[#1a1d24] hover:bg-[#22262e] border border-slate-600 hover:border-[#7a2f3a] text-slate-200 font-bold py-4 flex items-center justify-center gap-2 cursor-pointer transition-colors">
             {signal.passkey ? <Lock size={18}/> : <Unlock size={18}/>} {t.decrypt_btn}
           </button>
@@ -794,7 +869,9 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
                 </button>
               )}
               {isAuthor && <button onClick={handleDelete} className="text-[#802020] hover:text-red-500 font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer"><Trash2 size={14}/> [ PURGE ]</button>}
-              <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
+              {!isAuthor && signal.board === "gallery" && (
+                <button onClick={handleReport} className="text-slate-500 hover:text-[#9e3f4d] font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer">{t.report_btn}</button>
+              )}
             </div>
           </div>
 
@@ -841,9 +918,19 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
                   </div>
                 </div>
               ) : (
-                dec
+                <>
+                  {signal.image_urls && signal.image_urls.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {signal.image_urls.map((url: string, idx: number) => (
+                        <img key={idx} src={url} alt="" className="w-full rounded-sm border border-slate-700 cursor-pointer hover:opacity-90" onClick={() => window.open(url, "_blank")} />
+                      ))}
+                    </div>
+                  )}
+                  {dec}
+                </>
               )}
             </div>
+
 
 
 
@@ -1036,17 +1123,58 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t, board = "rada
   const [passkey, setPasskey] = useState("");
   const [status, setStatus] = useState<"idle"|"injecting"|"success">("idle");
   const [generatedCode, setGeneratedCode] = useState("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const isGallery = board === "gallery";
+
+  const handlePickImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files || []);
+    const valid: File[] = [];
+    for (const f of picked) {
+      if (f.size > 10 * 1024 * 1024) { alert(`${t.image_too_large} ${f.name}`); continue; }
+      valid.push(f);
+    }
+    setImageFiles(prev => [...prev, ...valid].slice(0, 4));
+    e.target.value = "";
+  };
+
+  const removeImage = (idx: number) => setImageFiles(prev => prev.filter((_, i) => i !== idx));
+
 
   const handleInject = async () => {
-    if(!text) return;
+    if (isGallery) {
+      if (imageFiles.length === 0) { alert(t.gallery_need_image); return; }
+    } else {
+      if(!text) return;
+    }
     if(isEncrypted && (passkey.length < 6 || passkey.length > 8)) { alert("PASSKEY MUST BE 6-8 DIGITS"); return; }
     setStatus("injecting");
+
+    let imageUrls: string[] = [];
+    if (isGallery && imageFiles.length > 0) {
+      try {
+        for (const file of imageFiles) {
+          const compressed = await compressImage(file);
+          const url = await uploadImageToStorage(compressed, currentUser?.id || "anonymous");
+          if (url) imageUrls.push(url);
+        }
+      } catch (e) {
+        setStatus("idle");
+        alert("> [ERROR] 图片处理失败，请重试。");
+        return;
+      }
+      if (imageUrls.length === 0) {
+        setStatus("idle");
+        alert("> [ERROR] 图片上传失败，请检查网络后重试。");
+        return;
+      }
+    }
+
     const accessCode = "ONC-" + Math.random().toString(36).substring(2, 6).toUpperCase();
     const finalTitle = title.trim()||"UNTITLED_RECORD";
     const { error } = await supabase.from("signals").insert({ 
-      title: finalTitle, text, pos_x: Math.floor(Math.random()*80)+10, pos_y: Math.floor(Math.random()*80)+10, 
+      title: finalTitle, text: text || "", pos_x: Math.floor(Math.random()*80)+10, pos_y: Math.floor(Math.random()*80)+10, 
       author_codename: currentUser?.codename || "UNKNOWN", author_id: currentUser?.id || null, access_code: accessCode, passkey: isEncrypted ? passkey : null,
-      board
+      board, image_urls: imageUrls
     });
     if(!error) { 
       setGeneratedCode(accessCode); 
@@ -1058,7 +1186,8 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t, board = "rada
   };
 
 
-  const closeAndReset = () => { setStatus("idle"); setTitle(""); setText(""); setPasskey(""); setIsEncrypted(false); setGeneratedCode(""); onRefresh(); onClose(); };
+
+  const closeAndReset = () => { setStatus("idle"); setTitle(""); setText(""); setPasskey(""); setIsEncrypted(false); setGeneratedCode(""); setImageFiles([]); onRefresh(); onClose(); };
 
   return <AnimatePresence>{isOpen && (
     <motion.div key="inject-modal" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 pointer-events-none">
@@ -1071,7 +1200,29 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t, board = "rada
         
         {status === "idle" && <>
           <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="RECORD_TITLE (Optional)" className="w-full bg-[#11141c] border border-slate-700 p-4 md:p-5 text-base md:text-lg text-slate-100 font-bold outline-none focus:border-slate-500 mb-5 cursor-text"/>
-          <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="> COMMENCE_TYPING..." className="flex-1 min-h-[200px] w-full bg-[#0a0d14] border border-slate-700 p-5 md:p-6 text-sm md:text-base text-slate-200 outline-none focus:border-[#7a2f3a] resize-none mb-5 custom-scrollbar leading-relaxed cursor-text"/>
+
+          {isGallery && (
+            <div className="mb-5">
+              <div className="flex flex-wrap gap-3 mb-3">
+                {imageFiles.map((f, idx) => (
+                  <div key={idx} className="relative w-20 h-20 md:w-24 md:h-24 border border-slate-700 rounded-sm overflow-hidden shrink-0">
+                    <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
+                    <button onClick={() => removeImage(idx)} className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 cursor-pointer"><X size={14}/></button>
+                  </div>
+                ))}
+                {imageFiles.length < 4 && (
+                  <label className="w-20 h-20 md:w-24 md:h-24 border border-dashed border-slate-600 rounded-sm flex items-center justify-center text-slate-500 hover:text-[#7a2f3a] hover:border-[#7a2f3a] cursor-pointer shrink-0">
+                    <span className="text-2xl">+</span>
+                    <input type="file" accept="image/*" multiple onChange={handlePickImages} className="hidden" />
+                  </label>
+                )}
+              </div>
+              <div className="text-xs text-slate-500 font-bold">{t.upload_images}</div>
+            </div>
+          )}
+
+          <textarea value={text} onChange={e=>setText(e.target.value)} placeholder={isGallery ? t.gallery_text_optional : "> COMMENCE_TYPING..."} className="flex-1 min-h-[120px] md:min-h-[200px] w-full bg-[#0a0d14] border border-slate-700 p-5 md:p-6 text-sm md:text-base text-slate-200 outline-none focus:border-[#7a2f3a] resize-none mb-5 custom-scrollbar leading-relaxed cursor-text"/>
+
           <div className="flex flex-col md:flex-row items-stretch md:items-end gap-5 shrink-0">
             <div className="flex-1 border border-slate-700 bg-[#11141c] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <label className="flex items-center gap-3 text-sm text-slate-300 font-bold cursor-pointer">
@@ -1085,7 +1236,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t, board = "rada
           </div>
         </>}
         
-        {status === "injecting" && <div className="flex-1 flex flex-col items-center justify-center gap-6"><Activity size={56} className="text-[#7a2f3a] animate-spin"/><div className="text-base text-[#7a2f3a] font-bold tracking-widest">{t.uploading}</div></div>}
+        {status === "injecting" && <div className="flex-1 flex flex-col items-center justify-center gap-6"><Activity size={56} className="text-[#7a2f3a] animate-spin"/><div className="text-base text-[#7a2f3a] font-bold tracking-widest">{isGallery ? t.image_uploading : t.uploading}</div></div>}
         
         {status === "success" && (
           <div className="flex-1 flex flex-col items-center justify-center gap-8 text-center">
@@ -1105,7 +1256,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t, board = "rada
 
 const BoardModal = ({ board, isOpen, onClose, posts, t, onOpenSignal, onOpenCompose }: any) => {
   const isStaff = board === "staff";
-  const label = isStaff ? t.sector_staff : t.sector_menu;
+  const label = isStaff ? t.sector_staff : board === "gallery" ? t.sector_gallery : t.sector_menu;
   const accent = isStaff ? "text-slate-300" : "text-[#9e3f4d]";
   return <AnimatePresence>{isOpen && (
         <motion.div key={`board-modal-${board}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9990] flex items-start md:items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md px-2 md:px-4 overflow-y-auto py-4 md:py-6">
@@ -1123,21 +1274,28 @@ const BoardModal = ({ board, isOpen, onClose, posts, t, onOpenSignal, onOpenComp
               {posts.length === 0 && <div className="text-sm text-slate-500 font-bold italic">{t.board_no_posts}</div>}
               {posts.map((sig: any) => (
                 <div key={sig.id} onClick={() => onOpenSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-4 md:p-4 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors">
-                  <div className="flex justify-between items-start gap-3 mb-2">
-                    <span className="text-base md:text-base text-slate-200 font-bold break-words min-w-0 leading-relaxed">{sig.title || "UNTITLED_RECORD"}</span>
-                    {sig.passkey && <Lock size={14} className="text-[#9e3f4d] shrink-0 mt-1"/>}
-                  </div>
-                  <div className="text-xs md:text-xs text-slate-500 flex justify-between items-center font-bold">
-                    <span>{sig.author_codename} · {formatDateTime(sig.created_at)}</span>
-                    {board === "menu" && (
-                      <span className="flex items-center gap-1.5 text-slate-500">
-                        <Heart size={13} className={sig.likes_count > 0 ? "fill-[#9e3f4d] text-[#9e3f4d]" : ""} />
-                        {sig.likes_count || 0}
-                      </span>
+                  <div className="flex gap-3">
+                    {board === "gallery" && sig.image_urls && sig.image_urls.length > 0 && (
+                      <img src={sig.image_urls[0]} alt="" className="w-16 h-16 object-cover rounded-sm border border-slate-700 shrink-0" />
                     )}
-              </div>
-            </div>
-          ))}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start gap-3 mb-2">
+                        <span className="text-base md:text-base text-slate-200 font-bold break-words min-w-0 leading-relaxed">{sig.title || "UNTITLED_RECORD"}</span>
+                        {sig.passkey && <Lock size={14} className="text-[#9e3f4d] shrink-0 mt-1"/>}
+                      </div>
+                      <div className="text-xs md:text-xs text-slate-500 flex justify-between items-center font-bold">
+                        <span>{sig.author_codename} · {formatDateTime(sig.created_at)}</span>
+                        {(board === "menu" || board === "gallery") && (
+                          <span className="flex items-center gap-1.5 text-slate-500">
+                            <Heart size={13} className={sig.likes_count > 0 ? "fill-[#9e3f4d] text-[#9e3f4d]" : ""} />
+                            {sig.likes_count || 0}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
         </div>
       </motion.div>
     </motion.div>
@@ -1163,7 +1321,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
   const [targetCode, setTargetCode] = useState("");
   const [scanNumbers, setScanNumbers] = useState({ lat: "00.000", lng: "00.000" });
   const [isScanning, setIsScanning] = useState(false);
-  const [openBoard, setOpenBoard] = useState<"staff" | "menu" | null>(null);
+  const [openBoard, setOpenBoard] = useState<"staff" | "menu" | "gallery" | null>(null);
   const [isBoardComposeOpen, setIsBoardComposeOpen] = useState(false);
 
   const fetchSignals = async () => { 
@@ -1422,6 +1580,8 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
                     >
                        <div className="absolute inset-0 bg-[#7a2f3a] rounded-full animate-ping opacity-20"></div>
                     </div>
+                  ) : sig.board === "gallery" ? (
+                    <div className="relative w-[10px] h-[10px] md:w-[12px] md:h-[12px] bg-[#a6b1bf] rounded-full shadow-[0_0_12px_#a6b1bf] group-hover:scale-150 transition-transform"></div>
                   ) : (
                     <div className="relative w-[10px] h-[10px] md:w-[12px] md:h-[12px] bg-[#7a2f3a] rounded-full shadow-[0_0_12px_#7a2f3a] group-hover:scale-150 transition-transform"></div>
                   )}
@@ -1465,21 +1625,27 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
           </Panel>
 
           <Panel title={t.sectors_title} className="flex-shrink-0">
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => setOpenBoard("staff")} className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors">
-                <Users size={22}/>
-                <span className="text-[11px] md:text-xs font-bold tracking-wider text-center leading-tight">{t.sector_staff}</span>
-                <span className="text-[10px] text-slate-600 text-center leading-tight">{t.sector_staff_sub}</span>
+            <div className="grid grid-cols-3 gap-2 md:gap-3">
+              <button onClick={() => setOpenBoard("staff")} className="flex flex-col items-center justify-center gap-2 p-3 md:p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors">
+                <Users size={20}/>
+                <span className="text-[10px] md:text-xs font-bold tracking-wider text-center leading-tight">{t.sector_staff}</span>
+                <span className="text-[9px] text-slate-600 text-center leading-tight">{t.sector_staff_sub}</span>
               </button>
-              <button onClick={() => setOpenBoard("menu")} className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors">
-                <UtensilsCrossed size={22}/>
-                <span className="text-[11px] md:text-xs font-bold tracking-wider text-center leading-tight">{t.sector_menu}</span>
-                <span className="text-[10px] text-slate-600 text-center leading-tight">{t.sector_menu_sub}</span>
+              <button onClick={() => setOpenBoard("menu")} className="flex flex-col items-center justify-center gap-2 p-3 md:p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors">
+                <UtensilsCrossed size={20}/>
+                <span className="text-[10px] md:text-xs font-bold tracking-wider text-center leading-tight">{t.sector_menu}</span>
+                <span className="text-[9px] text-slate-600 text-center leading-tight">{t.sector_menu_sub}</span>
+              </button>
+              <button onClick={() => setOpenBoard("gallery")} className="flex flex-col items-center justify-center gap-2 p-3 md:p-4 border border-slate-700 hover:border-[#7a2f3a] bg-[#11141c] text-slate-300 hover:text-[#7a2f3a] cursor-pointer transition-colors">
+                <FileText size={20}/>
+                <span className="text-[10px] md:text-xs font-bold tracking-wider text-center leading-tight">{t.sector_gallery}</span>
+                <span className="text-[9px] text-slate-600 text-center leading-tight">{t.sector_gallery_sub}</span>
               </button>
             </div>
           </Panel>
         </aside>
       </main>
+
 
       <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onClose={() => setActiveSignal(null)} onRefresh={fetchSignals} highlightReplyId={highlightReplyId} onConsumeHighlight={() => setHighlightReplyId(null)} onDeleted={handleSignalDeleted} onUpdated={handleSignalUpdated} />}</AnimatePresence>
 
@@ -1501,14 +1667,14 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
         onOpenCompose={() => setIsBoardComposeOpen(true)}
       />
 
-      <InjectPanel
+            <InjectPanel
         isOpen={isBoardComposeOpen}
         onClose={() => setIsBoardComposeOpen(false)}
         onRefresh={fetchSignals}
         currentUser={currentUser}
         t={t}
         board={openBoard || "radar"}
-        boardLabel={openBoard === "staff" ? "STAFF_TRANSMISSION" : openBoard === "menu" ? "MENU_SUBMISSION" : undefined}
+        boardLabel={openBoard === "staff" ? "STAFF_TRANSMISSION" : openBoard === "menu" ? "MENU_SUBMISSION" : openBoard === "gallery" ? "GALLERY_UPLOAD" : undefined}
       />
 
       <AnimatePresence>
