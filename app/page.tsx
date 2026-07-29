@@ -634,7 +634,7 @@ const ResetPasswordScreen = ({ t, onDone }: any) => {
 // ==========================================
 // 5. 弹窗与交互模块 (解密阅读弹窗)
 // ==========================================
-const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightReplyId, onConsumeHighlight, onDeleted, onUpdated }: any) => {
+const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightReplyId, onConsumeHighlight, onDeleted, onUpdated, onBookmarkChange }: any) => {
   const dec = useScrambleText(signal.text);
   const [replies, setReplies] = useState<any[]>([]);
   const [input, setInput] = useState("");
@@ -786,11 +786,15 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
   const handleToggleBookmark = async () => {
     if (!currentUser?.id) { alert("> 请先登录后再收藏。"); return; }
     if (isBookmarked) {
-      await supabase.from("bookmarks").delete().eq("user_id", currentUser.id).eq("signal_id", signal.id);
+      const { error } = await supabase.from("bookmarks").delete().eq("user_id", currentUser.id).eq("signal_id", signal.id);
+      if (error) { alert("> 取消收藏失败：" + error.message); return; }
       setIsBookmarked(false);
+      onBookmarkChange && onBookmarkChange(signal.id, false);
     } else {
-      await supabase.from("bookmarks").insert({ user_id: currentUser.id, signal_id: signal.id });
+      const { error } = await supabase.from("bookmarks").insert({ user_id: currentUser.id, signal_id: signal.id });
+      if (error) { alert("> 收藏失败：" + error.message); return; }
       setIsBookmarked(true);
+      onBookmarkChange && onBookmarkChange(signal.id, true);
     }
   };
 
@@ -1416,6 +1420,23 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
     }
   };
 
+  const handleBookmarkChange = (signalId: string, added: boolean) => {
+    if (added) {
+      // 立即插入：优先从三个已有的本地数据源里找这条 signal，避免额外请求
+      const found = cloudPool.find((s: any) => s.id === signalId) 
+        || displaySignals.find((s: any) => s.id === signalId) 
+        || repliedSignals.find((s: any) => s.id === signalId)
+        || activeSignal;
+      if (found) {
+        setBookmarkedSignals(prev => prev.some((s: any) => s.id === signalId) ? prev : [found, ...prev]);
+      } else {
+        fetchBookmarkedSignals(); // 兜底：本地找不到就重新拉一次
+      }
+    } else {
+      setBookmarkedSignals(prev => prev.filter((s: any) => s.id !== signalId));
+    }
+  };
+
   const handleJumpToSignal = async (signalId: string, replyId: string | null) => {
   // 先看本地缓存池里有没有这条帖子
   let target = cloudPool.find((s: any) => s.id === signalId);
@@ -1712,7 +1733,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
       </main>
 
 
-      <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onClose={() => setActiveSignal(null)} onRefresh={fetchSignals} highlightReplyId={highlightReplyId} onConsumeHighlight={() => setHighlightReplyId(null)} onDeleted={handleSignalDeleted} onUpdated={handleSignalUpdated} />}</AnimatePresence>
+      <AnimatePresence>{activeSignal && <DecryptModal signal={activeSignal} currentUser={currentUser} t={t} onClose={() => setActiveSignal(null)} onRefresh={fetchSignals} highlightReplyId={highlightReplyId} onConsumeHighlight={() => setHighlightReplyId(null)} onDeleted={handleSignalDeleted} onUpdated={handleSignalUpdated} onBookmarkChange={handleBookmarkChange} />}</AnimatePresence>
 
       <InjectPanel 
         isOpen={isInjectModalOpen} 
