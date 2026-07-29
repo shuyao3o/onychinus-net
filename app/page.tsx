@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Crosshair, X, Terminal, Cpu, Zap, Wifi, Shield, 
-Activity, Radio as RadioIcon, Code, Lock, Unlock, Eye, EyeOff, Search, KeyRound, Power, RefreshCw, FileText, User, Bell, Trash2, Reply, Heart, Users, UtensilsCrossed, Image as ImageIcon
+Activity, Radio as RadioIcon, Code, Lock, Unlock, Eye, EyeOff, Search, KeyRound, Power, RefreshCw, FileText, User, Bell, Trash2, Reply, Heart, Users, UtensilsCrossed, Image as ImageIcon, Bookmark
 } from "lucide-react";
 import { supabase } from "@/utils/supabase";
 
@@ -60,6 +60,7 @@ const TRANSLATIONS = {
     mark_all_read: "MARK ALL READ",
     tab_posted: "POSTED",
     tab_replied: "REPLIED",
+    tab_bookmarked: "SAVED",
     refresh_replies: "REFRESH",
     refreshing: "SYNCING...",
     sectors_title: "SECTOR ACCESS",
@@ -148,6 +149,7 @@ const TRANSLATIONS = {
     mark_all_read: "全部标为已读",
     tab_posted: "我发送的",
     tab_replied: "我回复的",
+    tab_bookmarked: "我收藏的",   // ← 新增
     refresh_replies: "刷新",
     refreshing: "同步中...",
     sectors_title: "分区频道",
@@ -771,6 +773,27 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
     }
   };
 
+    const [isBookmarked, setIsBookmarked] = useState(false);
+  useEffect(() => {
+    const check = async () => {
+      if (!currentUser?.id) return;
+      const { data } = await supabase.from("bookmarks").select("id").eq("user_id", currentUser.id).eq("signal_id", signal.id).maybeSingle();
+      setIsBookmarked(!!data);
+    };
+    check();
+  }, [signal.id, currentUser?.id]);
+
+  const handleToggleBookmark = async () => {
+    if (!currentUser?.id) { alert("> 请先登录后再收藏。"); return; }
+    if (isBookmarked) {
+      await supabase.from("bookmarks").delete().eq("user_id", currentUser.id).eq("signal_id", signal.id);
+      setIsBookmarked(false);
+    } else {
+      await supabase.from("bookmarks").insert({ user_id: currentUser.id, signal_id: signal.id });
+      setIsBookmarked(true);
+    }
+  };
+
   const handleReport = async () => {
     if (!confirm(t.report_confirm)) return;
     await supabase.from("reports").insert({ signal_id: signal.id, reporter_id: currentUser?.id || null, reason: "user_report" });
@@ -863,6 +886,10 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
             <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-6 px-6 pt-6 pb-4 md:-mx-8 md:-mt-8 md:px-8 md:pt-8 flex justify-between border-b border-slate-700/50 items-start gap-3 bg-[#1c1319]/95 backdrop-blur-sm">
               <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
               <div className="flex items-center gap-4 shrink-0 mt-0.5">
+                <button onClick={handleToggleBookmark} className={`font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer ${isBookmarked ? "text-[#9e3f4d]" : "text-slate-500 hover:text-[#9e3f4d]"}`}>
+                 <Bookmark size={14} className={isBookmarked ? "fill-[#9e3f4d]" : ""}/> {isBookmarked ? "[ SAVED ]" : "[ SAVE ]"}
+                </button>
+
               {isAuthor && !isEditing && (
                 <button onClick={() => { setEditTitle(signal.title || ""); setEditText(signal.text || ""); setIsEditing(true); }} className="text-slate-400 hover:text-[#9e3f4d] font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer">
                   <FileText size={14}/> {t.edit_btn}
@@ -1334,7 +1361,8 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
   const [cloudPool, setCloudPool] = useState<any[]>([]);
   const [displaySignals, setDisplaySignals] = useState<any[]>([]);
   const [repliedSignals, setRepliedSignals] = useState<any[]>([]);
-  const [archiveTab, setArchiveTab] = useState<"posted" | "replied">("posted");
+  const [archiveTab, setArchiveTab] = useState<"posted" | "replied" | "bookmarked">("posted");
+  const [bookmarkedSignals, setBookmarkedSignals] = useState<any[]>([]);
   const [activeSignal, setActiveSignal] = useState<any>(null);
   const [highlightReplyId, setHighlightReplyId] = useState<string | null>(null);  // 新增
   const [notifSignalCache, setNotifSignalCache] = useState<Record<string, any>>({});  // 新增
@@ -1375,6 +1403,18 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
     setRepliedSignals(ordered);
   }
 };
+
+  const fetchBookmarkedSignals = async () => {
+    if (!currentUser?.id) return;
+    const { data } = await supabase.from("bookmarks").select("signal_id").eq("user_id", currentUser.id).order("created_at", { ascending: false });
+    if (!data || data.length === 0) { setBookmarkedSignals([]); return; }
+    const ids = data.map((b: any) => b.signal_id);
+    const { data: sigs } = await supabase.from("signals").select("*").in("id", ids);
+    if (sigs) {
+      const ordered = ids.map((id: string) => sigs.find((s: any) => s.id === id)).filter(Boolean);
+      setBookmarkedSignals(ordered);
+    }
+  };
 
   const handleJumpToSignal = async (signalId: string, replyId: string | null) => {
   // 先看本地缓存池里有没有这条帖子
@@ -1417,7 +1457,7 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
   };
 
   useEffect(() => { fetchSignals(); }, []);
-  useEffect(() => { fetchRepliedSignals(); }, [currentUser?.id]);
+  useEffect(() => { fetchRepliedSignals(); fetchBookmarkedSignals(); }, [currentUser?.id]);
   
   useEffect(() => { 
   const timer = setInterval(() => { 
@@ -1526,9 +1566,10 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
             <div className="flex gap-2 mb-3 shrink-0">
                 <button onClick={() => setArchiveTab("posted")} className={`flex-1 text-xs font-bold py-2 border tracking-wider cursor-pointer transition-colors ${archiveTab === "posted" ? "bg-[#7a2f3a] border-[#7a2f3a] text-white" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}>{t.tab_posted}</button>
                 <button onClick={() => setArchiveTab("replied")} className={`flex-1 text-xs font-bold py-2 border tracking-wider cursor-pointer transition-colors ${archiveTab === "replied" ? "bg-[#7a2f3a] border-[#7a2f3a] text-white" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}>{t.tab_replied}</button>
+                <button onClick={() => setArchiveTab("bookmarked")} className={`flex-1 text-xs font-bold py-2 border tracking-wider cursor-pointer transition-colors flex items-center justify-center gap-1 ${archiveTab === "bookmarked" ? "bg-[#7a2f3a] border-[#7a2f3a] text-white" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}><Bookmark size={11}/>{t.tab_bookmarked}</button>
             </div>
             <div className="overflow-y-auto flex-1 pr-3 custom-scrollbar space-y-3">
-                 {(archiveTab === "posted" ? mySignals : repliedSignals).length > 0 ? (archiveTab === "posted" ? mySignals : repliedSignals).map(sig => (
+                 {(archiveTab === "posted" ? mySignals : archiveTab === "replied" ? repliedSignals : bookmarkedSignals).length > 0 ? (archiveTab === "posted" ? mySignals : archiveTab === "replied" ? repliedSignals : bookmarkedSignals).map(sig => (
                   <div key={sig.id} onClick={() => setActiveSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-3 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors flex flex-col justify-center">
                       <div className="text-sm text-slate-200 font-bold truncate flex items-center gap-2">
                         {sig.board === "staff" && <span className="text-[9px] px-1.5 py-0.5 bg-slate-700 text-slate-300 rounded-sm shrink-0">STAFF</span>}
