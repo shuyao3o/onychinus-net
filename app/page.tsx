@@ -827,9 +827,9 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
   };
 
   return (
-    <motion.div key="decrypt-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[10000] flex items-start md:items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md px-4 overflow-y-auto py-6">
+    <motion.div key="decrypt-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[10000] flex items-start md:items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md px-4 overflow-y-auto py-6" style={{ width: '100vw' }}>
       {step === "preview" && (
-        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="relative w-full max-w-[450px] bg-[#0c1017] border border-slate-600 shadow-[0_0_50px_rgba(0,0,0,0.9)] p-8 font-mono text-slate-200 flex flex-col">
+        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="relative w-full max-w-[450px] bg-[#0c1017] border border-slate-600 shadow-[0_0_50px_rgba(0,0,0,0.9)] p-8 font-mono text-slate-200 flex flex-col" style={{ minWidth: 'min(280px, 90vw)' }}>
           <div className="flex justify-between border-b border-slate-700 pb-4 mb-6 items-center">
             <span className="text-slate-400 text-sm font-bold tracking-widest">[ SIGNAL_INTERCEPTED ]</span>
             <div className="flex items-center gap-4">
@@ -887,7 +887,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
       )}
 
       {step === "read" && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[95dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)' }}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[95dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)', minWidth: 'min(300px, 90vw)' }}>
             <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-6 px-6 pt-6 pb-4 md:-mx-8 md:-mt-8 md:px-8 md:pt-8 flex justify-between border-b border-slate-700/50 items-start gap-3 bg-[#1c1319]/95 backdrop-blur-sm">
               <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
               <div className="flex items-center gap-4 shrink-0 mt-0.5">
@@ -1227,7 +1227,7 @@ const InjectPanel = ({ isOpen, onClose, onRefresh, currentUser, t, board = "rada
   return <AnimatePresence>{isOpen && (
     <motion.div key="inject-modal" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 pointer-events-none">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#0a0d14]/90 backdrop-blur-sm pointer-events-auto cursor-pointer" onClick={status === "idle" ? onClose : undefined} />
-      <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="relative w-full max-w-[900px] h-[90vh] md:h-[85vh] bg-[#0c1017] border border-slate-700 p-6 md:p-10 flex flex-col pointer-events-auto overflow-y-auto shadow-[0_0_100px_rgba(0,0,0,1)]">
+      <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="relative w-full max-w-[900px] h-[90vh] md:h-[85vh] bg-[#0c1017] border border-slate-700 p-6 md:p-10 flex flex-col pointer-events-auto overflow-y-auto shadow-[0_0_100px_rgba(0,0,0,1)]" style={{ minWidth: 'min(300px, 90vw)' }}>
         <div className="flex justify-between border-b border-slate-700 pb-5 mb-4 md:mb-6 shrink-0">
           <span className="text-slate-200 text-sm md:text-xl font-bold flex items-center gap-3"><FileText size={24} className="text-[#7a2f3a]"/> [ SECURE_COMPOSE_ENVIRONMENT ]</span>
           <button onClick={status==="success" ? closeAndReset : onClose} className="text-slate-600 hover:text-white cursor-pointer"><X size={28}/></button>
@@ -1295,7 +1295,7 @@ const BoardModal = ({ board, isOpen, onClose, posts, t, onOpenSignal, onOpenComp
   const accent = isStaff ? "text-slate-300" : "text-[#9e3f4d]";
   return <AnimatePresence>{isOpen && (
         <motion.div key={`board-modal-${board}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9990] flex items-start md:items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md px-2 md:px-4 overflow-y-auto py-4 md:py-6">
-          <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="relative w-full max-w-[700px] min-h-[500px] max-h-[95dvh] md:max-h-[90dvh] my-auto bg-[#0c1017] border border-slate-600 p-4 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+          <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="relative w-full max-w-[700px] min-h-[500px] max-h-[95dvh] md:max-h-[90dvh] my-auto bg-[#0c1017] border border-slate-600 p-4 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ minWidth: 'min(300px, 90vw)' }}>
             <div className="flex justify-between items-center border-b border-slate-700 pb-4 mb-5 shrink-0">
               <span className={`text-base md:text-lg font-bold tracking-widest ${accent}`}>[ {label} ]</span>
               <button onClick={onClose} className="hover:text-white cursor-pointer"><X size={22}/></button>
