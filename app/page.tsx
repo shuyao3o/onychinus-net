@@ -916,7 +916,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
                 <div className="text-sm text-slate-400 flex flex-wrap items-center justify-between gap-2 mb-6 border-b border-slate-800/50 pb-3 font-bold">
                 <span>OPERATOR: <span className="text-[#9e3f4d]">{signal.author_codename}</span></span>
                 <div className="flex items-center gap-4">
-                  {signal.board === "menu" && (
+                  {(signal.board === "menu" || signal.board === "gallery") && (
                     <button onClick={handleToggleLike} className="flex items-center gap-1.5 cursor-pointer group">
                       <Heart size={15} className={isLiked ? "fill-[#9e3f4d] text-[#9e3f4d]" : "text-slate-500 group-hover:text-[#9e3f4d]"} />
                       <span className={`text-xs font-bold ${isLiked ? "text-[#9e3f4d]" : "text-slate-500"}`}>{likesCount}</span>
