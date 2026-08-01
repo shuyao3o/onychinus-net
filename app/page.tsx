@@ -848,10 +848,11 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
             </button>
           )}
           {signal.image_urls && signal.image_urls.length > 0 && (
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {signal.image_urls.slice(0, 4).map((url: string, idx: number) => (
-                <img key={idx} src={url} alt="" className="w-full aspect-square object-cover border border-slate-700 rounded-sm" />
-              ))}
+            <div className="relative mb-4">
+              <img src={signal.image_urls[0]} alt="" loading="lazy" className="w-full aspect-video object-cover border border-slate-700 rounded-sm" />
+              {signal.image_urls.length > 1 && (
+                <span className="absolute bottom-1.5 right-1.5 text-[10px] font-bold bg-black/70 text-slate-200 px-1.5 py-0.5 rounded-sm">+{signal.image_urls.length - 1}</span>
+              )}
             </div>
           )}
           {signal.text && (
@@ -955,8 +956,9 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
                   {signal.image_urls && signal.image_urls.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       {signal.image_urls.map((url: string, idx: number) => (
-                        <img key={idx} src={url} alt="" className="w-full rounded-sm border border-slate-700 cursor-pointer hover:opacity-90" onClick={() => window.open(url, "_blank")} />
+                        <img key={idx} src={url} alt="" loading="lazy" className="w-full rounded-sm border border-slate-700 cursor-pointer hover:opacity-90" onClick={() => window.open(url, "_blank")} />
                       ))}
+
                     </div>
                   )}
                   {dec}
