@@ -888,9 +888,12 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
 
       {step === "read" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[95dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)', minWidth: 'min(300px, 90vw)' }}>
-            <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-6 px-6 pt-6 pb-4 md:-mx-8 md:-mt-8 md:px-8 md:pt-8 flex justify-between border-b border-slate-700/50 items-start gap-3 bg-[#1c1319]/95 backdrop-blur-sm">
-              <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md flex-1">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
-              <div className="flex items-center gap-2 md:gap-4 shrink-0 mt-0.5">
+            <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-6 px-6 pt-6 pb-4 md:-mx-8 md:-mt-8 md:px-8 md:pt-8 flex flex-col gap-2 border-b border-slate-700/50 bg-[#1c1319]/95 backdrop-blur-sm">
+              <div className="flex justify-between items-start gap-3">
+                <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md flex-1">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
+                <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50 shrink-0"><X size={20}/></button>
+              </div>
+              <div className="flex items-center gap-4 justify-end flex-wrap">
                 {!isAuthor && (
                 <button onClick={handleToggleBookmark} className={`font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer ${isBookmarked ? "text-[#9e3f4d]" : "text-slate-500 hover:text-[#9e3f4d]"}`}>
                  <Bookmark size={14} className={isBookmarked ? "fill-[#9e3f4d]" : ""}/> {isBookmarked ? "[ SAVED ]" : "[ SAVE ]"}
@@ -905,10 +908,8 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
               {!isAuthor && signal.board === "gallery" && (
                 <button onClick={handleReport} className="text-slate-500 hover:text-[#9e3f4d] font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer">{t.report_btn}</button>
               )}
-              <button onClick={onClose} className="hover:text-white cursor-pointer relative z-50"><X size={20}/></button>
             </div>
           </div>
-
 
           <div className="flex-1 flex flex-col overflow-y-auto min-h-0 gap-0 custom-scrollbar pr-1">
             <div className="mb-4 text-base md:text-lg text-slate-200 leading-relaxed tracking-wide whitespace-pre-wrap">
