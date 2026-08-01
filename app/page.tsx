@@ -838,7 +838,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
             </div>
           </div>
           <div className="flex flex-col md:flex-row md:justify-between md:items-baseline gap-1 md:gap-3 mb-2">
-            <div className="text-xl md:text-2xl font-bold text-slate-100 break-words min-w-0">{signal.title || "UNTITLED_RECORD"}</div>
+            <div className="text-xl md:text-2xl font-bold text-slate-100 break-words min-w-0 flex-1">{signal.title || "UNTITLED_RECORD"}</div>
             {signal.created_at && <span className="text-xs text-slate-500 shrink-0">{formatDateTime(signal.created_at)}</span>}
           </div>
           {signal.board === "menu" && (
@@ -889,7 +889,7 @@ const DecryptModal = ({ signal, onClose, onRefresh, currentUser, t, highlightRep
       {step === "read" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-[600px] min-h-[500px] max-h-[95dvh] md:max-h-[700px] my-auto bg-[#0c1017] border border-slate-600 p-6 md:p-8 font-mono text-slate-200 flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.9)]" style={{ background: 'linear-gradient(135deg, rgba(38, 22, 28, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)', minWidth: 'min(300px, 90vw)' }}>
             <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-6 px-6 pt-6 pb-4 md:-mx-8 md:-mt-8 md:px-8 md:pt-8 flex justify-between border-b border-slate-700/50 items-start gap-3 bg-[#1c1319]/95 backdrop-blur-sm">
-              <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
+              <span className="text-slate-300 text-sm font-bold tracking-widest break-words min-w-0 leading-relaxed drop-shadow-md flex-1">[ DECRYPTED ] - {signal.title || "UNTITLED"}</span>
               <div className="flex items-center gap-4 shrink-0 mt-0.5">
                 <button onClick={handleToggleBookmark} className={`font-bold text-[10px] tracking-widest flex items-center gap-1 cursor-pointer ${isBookmarked ? "text-[#9e3f4d]" : "text-slate-500 hover:text-[#9e3f4d]"}`}>
                  <Bookmark size={14} className={isBookmarked ? "fill-[#9e3f4d]" : ""}/> {isBookmarked ? "[ SAVED ]" : "[ SAVE ]"}
@@ -1317,7 +1317,7 @@ const BoardModal = ({ board, isOpen, onClose, posts, t, onOpenSignal, onOpenComp
                       )}
                       <div className="p-2">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <span className="text-xs text-slate-200 font-bold break-words min-w-0 leading-tight">{sig.title || "UNTITLED_RECORD"}</span>
+                          <span className="text-xs text-slate-200 font-bold break-words min-w-0 leading-tight flex-1">{sig.title || "UNTITLED_RECORD"}</span>
                           {sig.passkey && <Lock size={12} className="text-[#9e3f4d] shrink-0 mt-0.5"/>}
                         </div>
                         <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold">
@@ -1336,7 +1336,7 @@ const BoardModal = ({ board, isOpen, onClose, posts, t, onOpenSignal, onOpenComp
                   {posts.map((sig: any) => (
                     <div key={sig.id} onClick={() => onOpenSignal(sig)} className="cursor-pointer bg-[#0a0d14] p-4 md:p-4 border-l-4 border-slate-700 hover:border-[#7a2f3a] hover:bg-[#11141c] transition-colors">
                       <div className="flex justify-between items-start gap-3 mb-2">
-                        <span className="text-base md:text-base text-slate-200 font-bold break-words min-w-0 leading-relaxed">{sig.title || "UNTITLED_RECORD"}</span>
+                        <span className="text-base md:text-base text-slate-200 font-bold break-words min-w-0 leading-relaxed flex-1">{sig.title || "UNTITLED_RECORD"}</span>
                         {sig.passkey && <Lock size={14} className="text-[#9e3f4d] shrink-0 mt-1"/>}
                       </div>
                       <div className="text-xs md:text-xs text-slate-500 flex justify-between items-center font-bold">
