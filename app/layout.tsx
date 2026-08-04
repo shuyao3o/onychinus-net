@@ -27,7 +27,44 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: `
+          body { background:#0a0d14; color:#cbd5e1; margin:0; }
+          input, textarea, button {
+            background:#0c1017; color:#e2e8f0; border:1px solid #475569;
+            padding:8px 10px; border-radius:2px; font-family:inherit;
+          }
+          button { cursor:pointer; }
+        `}} />
+      </head>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            function checkStylesLoaded() {
+              try {
+                var probe = document.createElement('div');
+                probe.className = 'hidden';
+                document.body.appendChild(probe);
+                var isHidden = window.getComputedStyle(probe).display === 'none';
+                document.body.removeChild(probe);
+                if (!isHidden) {
+                  var bar = document.createElement('div');
+                  bar.innerText = '页面资源加载异常，点击此处刷新重试 / Resource load failed, tap to reload';
+                  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#7a2f3a;color:#fff;text-align:center;padding:10px;font-family:sans-serif;font-size:13px;cursor:pointer;';
+                  bar.onclick = function() { window.location.reload(); };
+                  document.body.appendChild(bar);
+                }
+              } catch (e) {}
+            }
+            if (document.readyState === 'complete') {
+              setTimeout(checkStylesLoaded, 1500);
+            } else {
+              window.addEventListener('load', function() { setTimeout(checkStylesLoaded, 1500); });
+            }
+          })();
+        `}} />
+      </body>
     </html>
   );
 }
