@@ -44,23 +44,24 @@ export default function RootLayout({
             function checkStylesLoaded() {
               try {
                 var probe = document.createElement('div');
-                probe.className = 'hidden';
+                probe.className = 'w-0';
+                probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;';
                 document.body.appendChild(probe);
-                var isHidden = window.getComputedStyle(probe).display === 'none';
+                var isZeroWidth = probe.offsetWidth === 0;
                 document.body.removeChild(probe);
-                if (!isHidden) {
+                if (!isZeroWidth) {
                   var bar = document.createElement('div');
                   bar.innerText = '页面资源加载异常，点击此处刷新重试 / Resource load failed, tap to reload';
-                  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#7a2f3a;color:#fff;text-align:center;padding:10px;font-family:sans-serif;font-size:13px;cursor:pointer;';
+                  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#7a2f3a;color:#fff;text-align:center;padding:10px 16px;font-family:sans-serif;font-size:13px;cursor:pointer;line-height:1.5;';
                   bar.onclick = function() { window.location.reload(); };
                   document.body.appendChild(bar);
                 }
               } catch (e) {}
             }
             if (document.readyState === 'complete') {
-              setTimeout(checkStylesLoaded, 1500);
+              setTimeout(checkStylesLoaded, 2000);
             } else {
-              window.addEventListener('load', function() { setTimeout(checkStylesLoaded, 1500); });
+              window.addEventListener('load', function() { setTimeout(checkStylesLoaded, 2000); });
             }
           })();
         `}} />
