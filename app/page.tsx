@@ -437,23 +437,42 @@ const TerminalLogin = ({ onLoginSuccess, t }: { onLoginSuccess: (p: any) => void
     if (!email || !password || (isRegistering && !codename)) { setErrorMsg("> [ERROR] Missing fields."); return; }
     setStatus("authenticating"); setErrorMsg("");
     try {
-      if (isRegistering) {
+    if (isRegistering) {
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
-  if (!data.user) { 
-    setErrorMsg("> [ERROR] Registration failed, no user returned."); 
-    setStatus("idle"); 
-    return; 
+  if (!data.user) {
+    setErrorMsg("> [ERROR] Registration failed, no user returned.");
+    setStatus("idle");
+    return;
   }
-  const userId = data.user.id;  // ← 关键：提前取出来存到普通变量
-  const { error: profileError } = await supabase
+  const userId = data.user.id;
+
+  // 先检查触发器是否已自动创建了 profile（兜底机制）
+  const { data: existingProfile } = await supabase
     .from("profiles")
-    .insert({ id: userId, email, codename });
-  if (profileError) throw profileError;
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (existingProfile) {
+    // 触发器已创建，直接用用户填的 codename 更新
+    await supabase
+      .from("profiles")
+      .update({ codename })
+      .eq("id", userId);
+  } else {
+    // 触发器未创建（不太可能），手动插入
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert({ id: userId, email, codename });
+    if (profileError) throw profileError;
+  }
+
   setSuccessName(codename);
   setStatus("success");
   setTimeout(() => onLoginSuccess({ id: userId, email, codename }), 2000);
 }
+
  else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
