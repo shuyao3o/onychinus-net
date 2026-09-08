@@ -448,25 +448,14 @@ const TerminalLogin = ({ onLoginSuccess, t }: { onLoginSuccess: (p: any) => void
   const userId = data.user.id;
 
   // 先检查触发器是否已自动创建了 profile（兜底机制）
-  const { data: existingProfile } = await supabase
+  const { error: profileError } = await supabase
     .from("profiles")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
+    .upsert(
+      { id: userId, email, codename },
+      { onConflict: "id" }
+    );
+  if (profileError) throw profileError;
 
-  if (existingProfile) {
-    // 触发器已创建，直接用用户填的 codename 更新
-    await supabase
-      .from("profiles")
-      .update({ codename })
-      .eq("id", userId);
-  } else {
-    // 触发器未创建（不太可能），手动插入
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .insert({ id: userId, email, codename });
-    if (profileError) throw profileError;
-  }
 
   setSuccessName(codename);
   setStatus("success");
