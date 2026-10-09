@@ -437,31 +437,23 @@ const TerminalLogin = ({ onLoginSuccess, t }: { onLoginSuccess: (p: any) => void
     if (!email || !password || (isRegistering && !codename)) { setErrorMsg("> [ERROR] Missing fields."); return; }
     setStatus("authenticating"); setErrorMsg("");
     try {
-    if (isRegistering) {
+      if (isRegistering) {
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
-  if (!data.user) {
-    setErrorMsg("> [ERROR] Registration failed, no user returned.");
-    setStatus("idle");
-    return;
+  if (!data.user) { 
+    setErrorMsg("> [ERROR] Registration failed, no user returned."); 
+    setStatus("idle"); 
+    return; 
   }
-  const userId = data.user.id;
-
-  // 先检查触发器是否已自动创建了 profile（兜底机制）
+  const userId = data.user.id;  // ← 关键：提前取出来存到普通变量
   const { error: profileError } = await supabase
     .from("profiles")
-    .upsert(
-      { id: userId, email, codename },
-      { onConflict: "id" }
-    );
+    .insert({ id: userId, email, codename });
   if (profileError) throw profileError;
-
-
   setSuccessName(codename);
   setStatus("success");
   setTimeout(() => onLoginSuccess({ id: userId, email, codename }), 2000);
 }
-
  else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -490,7 +482,7 @@ setTimeout(() => onLoginSuccess(profile), 2000);
       
       <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-20 w-full max-w-[500px] border border-slate-700 bg-[#0c1017]/95 backdrop-blur-md p-8 md:p-12 shadow-[0_0_80px_rgba(0,0,0,0.9)]">
         <div className="flex flex-col items-center mb-10 gap-4">
-          {status === "success" ? <Unlock size={40} className="text-[#9e3f4d]" /> : <Lock size={40} className="text-slate-400" />}
+          <img src="/logo.png" alt="ONYCHINUS" className="w-16 h-16 md:w-20 md:h-20 object-contain" />
           <div className="text-2xl md:text-3xl font-bold tracking-[0.3em] text-slate-100 mt-2">ONYCHINUS</div>
         </div>
 
