@@ -28,3 +28,8 @@ body {
 .font-mono {
   font-family: var(--font-geist-mono), ui-monospace, Menlo, Consolas, "PingFang SC", "Microsoft YaHei", sans-serif !important;
 }
+
+@keyframes radarSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

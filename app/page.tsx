@@ -4,7 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Crosshair, X, Terminal, Cpu, Zap, Wifi, Shield, 
-Activity, Radio as RadioIcon, Code, Lock, Unlock, Eye, EyeOff, Search, KeyRound, Power, RefreshCw, FileText, User, Bell, Trash2, Reply, Heart, Users, UtensilsCrossed, Image as ImageIcon, Bookmark
+  Activity, Radio as RadioIcon, Code, Lock, Unlock, Eye, EyeOff, 
+  Search, KeyRound, Power, RefreshCw, FileText, User, Bell, 
+  Trash2, Reply, Heart, Users, UtensilsCrossed, Image as ImageIcon, 
+  Bookmark, ChevronDown, Wind
 } from "lucide-react";
 import { supabase } from "@/utils/supabase";
 
@@ -28,8 +31,8 @@ const TRANSLATIONS = {
     network: "NETWORK TRAFFIC",
     nominal: "SYSTEM NOMINAL",
     anno_title: "ANNOUNCEMENTS",
-    anno_1: "[CALENDAR] Celebrating Sylus's 2nd Anniversary!",
-    anno_2: "[UPDATE] Onychinus Net v2.2 Online. New: Sector Access.",
+    anno_1: "[CALENDAR] Celebrating Sylus's 2nd Anniversary Reboot!",
+    anno_2: "[UPDATE] Onychinus Net v3.0 Online. New: Commander Profile & Impression Anchor.",
     my_signals: "MY ARCHIVES",
     radar_active: "Radar active. Signals intercepted.",
     no_records: "> No records found.",
@@ -117,8 +120,8 @@ const TRANSLATIONS = {
     network: "网络吞吐",
     nominal: "各项指标正常",
     anno_title: "暗网公告",
-    anno_1: "[日历] 庆祝秦彻上线二周年！",
-    anno_2: "[系统] 暗网终端 v2.2 现已上线。新增：分区频道。",
+    anno_1: "[日历] 庆祝秦彻二周年重启！",
+    anno_2: "[系统] 暗网终端 v3.0 现已上线。新增：首领信息和锚点。",
     my_signals: "我的传输档案",
     radar_active: "雷达运转中。已拦截频段。",
     no_records: "> 尚未上传任何通讯记录。",
@@ -190,6 +193,467 @@ const TRANSLATIONS = {
     report_sent: "> 举报已提交，感谢反馈。"
   }
 };
+
+// ==========================================
+// NEW: 首领档案组件
+// ==========================================
+const CommanderFile = ({ currentUser }: { currentUser: any }) => {
+  const [photoSrc, setPhotoSrc] = React.useState("/sylus.png");
+  const [photoError, setPhotoError] = React.useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPhotoSrc(url);
+    setPhotoError(false);
+  };
+
+  const infoRows = [
+    { label: "姓名", value: "秦彻" },
+    { label: "身高", value: "190 cm" },
+    {
+      label: "生日",
+      value: "四月",
+      note: "别管哪一天，不是我们该知道的事，庆祝一整个月就行——某暗点成员",
+    },
+    { label: "Evol", value: "能量" },
+  ];
+
+  return (
+    <div className="relative border border-slate-700/80 bg-[#0c1017]/90 backdrop-blur-md flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.8)] font-mono">
+      {/* Panel 四角装饰 */}
+      <div className="absolute -top-[1px] -left-[1px] w-2 h-2 border-t border-l border-slate-500"></div>
+      <div className="absolute -top-[1px] -right-[1px] w-2 h-2 border-t border-r border-slate-500"></div>
+      <div className="absolute -bottom-[1px] -left-[1px] w-2 h-2 border-b border-l border-slate-500"></div>
+      <div className="absolute -bottom-[1px] -right-[1px] w-2 h-2 border-b border-r border-slate-500"></div>
+
+      {/* 标题栏 — 与 Panel 完全一致 */}
+      <div className="flex justify-between items-center px-4 py-3 border-b border-slate-700/80 bg-[#11141c]">
+        <div className="flex items-center gap-2">
+          <img src="/feather.png" alt="" aria-hidden="true" className="w-4 h-4 object-contain" style={{ filter: "grayscale(1) brightness(2.5) contrast(0.7)" }} />
+          <span className="text-sm font-bold tracking-widest text-slate-200">首领信息</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-600 tracking-widest">CLASSIFIED</span>
+          <span className="text-[#9e3f4d] text-sm">+</span>
+        </div>
+      </div>
+
+      <div className="p-4 flex gap-4">
+        {/* 左侧：身份照片 */}
+        <div className="shrink-0 flex flex-col items-center gap-2">
+          <div
+            className="relative w-[96px] h-[120px] border border-slate-600 overflow-hidden bg-[#111520] cursor-pointer group"
+            onClick={() => fileInputRef.current?.click()}
+            title="点击替换照片"
+          >
+            <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#9e3f4d] z-10" />
+            <span className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#9e3f4d] z-10" />
+            <span className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#9e3f4d] z-10" />
+            <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#9e3f4d] z-10" />
+            {!photoError ? (
+              <img
+                src={photoSrc}
+                alt="首领照片"
+                className="w-full h-full object-cover object-top transition-all duration-300"
+                onError={() => setPhotoError(true)}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <User size={32} className="text-slate-600" />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-[#9e3f4d]/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <ImageIcon size={16} className="text-white" />
+            </div>
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+          <div className="text-[10px] text-slate-600 tracking-widest text-center">ID-PHOTO</div>
+          <div className="text-[9px] text-slate-700 tracking-wider text-center">CLICK TO REPLACE</div>
+        </div>
+
+        {/* 右侧：信息栏 */}
+        <div className="flex-1 flex flex-col gap-0 min-w-0">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-px flex-1 bg-slate-700" />
+            <span className="text-[10px] text-slate-600 tracking-widest shrink-0">FILE NO. ONC-ALPHA-001</span>
+            <div className="h-px flex-1 bg-slate-700" />
+          </div>
+
+          {infoRows.map((row) => (
+            <div key={row.label} className="flex items-start border-b border-slate-800/60 py-2">
+              <div className="w-14 shrink-0 text-xs text-slate-500 tracking-widest pt-px">{row.label}</div>
+              <div className="text-xs text-slate-700 mr-2 pt-px">：</div>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm text-slate-200 font-bold tracking-wider">{row.value}</span>
+                {row.note && (
+                  <p className="text-[10px] text-slate-600 mt-0.5 leading-relaxed italic">
+                    // {row.note}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs text-[#9e3f4d] tracking-widest">■ ACTIVE</span>
+            <span className="text-xs text-slate-700">|</span>
+            <span className="text-xs text-slate-600 tracking-widest">CLEARANCE LV.MAX</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// NEW: 首领印象词云组件
+// ==========================================
+type ImpressionWord = {
+  id: string;
+  word: string;
+  user_id: string;
+};
+
+const ImpressionCloud = ({ currentUser }: { currentUser: any }) => {
+  const [allWords, setAllWords] = React.useState<ImpressionWord[]>([]);
+  const [myWords, setMyWords] = React.useState<ImpressionWord[]>([]);
+  const [inputWord, setInputWord] = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [loaded, setLoaded] = React.useState(false);
+  const [showChart, setShowChart] = React.useState(false);
+  const [chartMounted, setChartMounted] = React.useState(false);
+
+  const wordFreq = React.useMemo(() => {
+    const freq: Record<string, number> = {};
+    for (const w of allWords) freq[w.word] = (freq[w.word] || 0) + 1;
+    return freq;
+  }, [allWords]);
+
+  const uniqueWords = React.useMemo(() => {
+    const result: { word: string; count: number }[] = [];
+    for (const [word, count] of Object.entries(wordFreq)) result.push({ word, count });
+    return result.sort((a, b) => b.count - a.count);
+  }, [wordFreq]);
+
+  const maxCount = Math.max(1, ...uniqueWords.map((w) => w.count));
+  const getFontSize = (count: number) => Math.round(13 + (count / maxCount) * 13);
+  const getColor = (count: number) => {
+    const ratio = count / maxCount;
+    if (ratio > 0.7) return "text-[#9e3f4d]";
+    if (ratio > 0.4) return "text-slate-300";
+    return "text-slate-500";
+  };
+
+  const loadWords = React.useCallback(async () => {
+    const { data } = await supabase.from("impression_words").select("id, word, user_id");
+    if (data) {
+      setAllWords(data);
+      if (currentUser?.id)
+        setMyWords(data.filter((w: ImpressionWord) => w.user_id === currentUser.id));
+    }
+    setLoaded(true);
+  }, [currentUser?.id]);
+
+  useEffect(() => { loadWords(); }, [loadWords]);
+
+  const handleSubmit = async () => {
+    const trimmed = inputWord.trim();
+    if (!trimmed) return;
+    if ([...trimmed].length > 5) { setError("每个词不超过 5 个字"); return; }
+    if (myWords.length >= 5) { setError("你已提交了 5 个印象词（上限）"); return; }
+    if (myWords.some((w) => w.word === trimmed)) { setError("你已经提交过这个词了"); return; }
+    setError("");
+    setSubmitting(true);
+    const { data, error: insertError } = await supabase
+      .from("impression_words")
+      .insert({ user_id: currentUser.id, word: trimmed })
+      .select()
+      .single();
+    setSubmitting(false);
+    if (insertError) {
+      setError("> [ERROR] " + insertError.message);
+    } else if (data) {
+      setMyWords((prev) => [...prev, data]);
+      setAllWords((prev) => [...prev, data]);
+      setInputWord("");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from("impression_words").delete().eq("id", id);
+    setMyWords((prev) => prev.filter((w) => w.id !== id));
+    setAllWords((prev) => prev.filter((w) => w.id !== id));
+  };
+
+  const remaining = 5 - myWords.length;
+  const chartWords = uniqueWords.slice(0, 12);
+
+  return (
+    <div className="relative border border-slate-700/80 bg-[#0c1017]/90 backdrop-blur-md flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.8)] font-mono">
+      <div className="absolute -top-[1px] -left-[1px] w-2 h-2 border-t border-l border-slate-500"></div>
+      <div className="absolute -top-[1px] -right-[1px] w-2 h-2 border-t border-r border-slate-500"></div>
+      <div className="absolute -bottom-[1px] -left-[1px] w-2 h-2 border-b border-l border-slate-500"></div>
+      <div className="absolute -bottom-[1px] -right-[1px] w-2 h-2 border-b border-r border-slate-500"></div>
+
+      {/* 标题栏 */}
+      <div className="flex justify-between items-center px-4 py-3 border-b border-slate-700/80 bg-[#11141c]">
+        <div className="flex items-center gap-2">
+          <img
+            src="/feather.png"
+            alt=""
+            aria-hidden="true"
+            className="w-4 h-4 object-contain"
+            style={{ filter: "grayscale(1) brightness(2.5) contrast(0.7)" }}
+          />
+          <span className="text-sm font-bold tracking-widest text-slate-200">首领印象</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-slate-600">ANON · {allWords.length} SIGNALS</span>
+          <button
+            onClick={() => {
+              const next = !showChart;
+              setShowChart(next);
+              if (next) {
+                setChartMounted(false);
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => setChartMounted(true))
+                );
+              }
+            }}
+            className="text-xs text-slate-500 hover:text-slate-300 tracking-widest transition-colors cursor-pointer"
+          >
+            {showChart ? "CLOUD" : "CHART"}
+          </button>
+          <span className="text-slate-500 text-sm">+</span>
+        </div>
+      </div>
+
+      {/* 词云 / 柱状图 */}
+      <div className="p-4 min-h-[90px]">
+        {!loaded ? (
+          <div className="text-xs text-slate-600 animate-pulse tracking-widest">LOADING…</div>
+        ) : uniqueWords.length === 0 ? (
+          <div className="text-xs text-slate-600 tracking-widest italic">
+            &gt; 暂无印象记录。成为第一个留下印象的人。
+          </div>
+        ) : showChart ? (
+          <div className="flex flex-col gap-1.5 w-full">
+            {chartWords.map(({ word, count }, i) => (
+              <div key={word} className="flex items-center gap-2 w-full">
+                <div className="w-[60px] shrink-0 text-xs text-slate-400 text-right tracking-wider whitespace-nowrap">
+                  {word}
+                </div>
+                <div className="flex-1 h-4 bg-[#0a0d14] border border-slate-800 relative overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-[#7a2f3a]"
+                    style={{
+                      width: chartMounted ? `${(count / maxCount) * 100}%` : "0%",
+                      transition: `width ${300 + i * 60}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                    }}
+                  />
+                  <div
+                    className="absolute inset-y-0 left-0 pointer-events-none"
+                    style={{
+                      width: chartMounted ? `${(count / maxCount) * 100}%` : "0%",
+                      transition: `width ${300 + i * 60}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                      background: "linear-gradient(90deg, transparent 60%, rgba(199,90,108,0.35) 85%, rgba(255,200,200,0.15) 100%)",
+                    }}
+                  />
+                </div>
+                <div className="w-6 shrink-0 text-xs text-slate-500 tabular-nums text-right">
+                  {count}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-x-3 gap-y-2 leading-relaxed">
+            {uniqueWords.map(({ word, count }) => (
+              <span
+                key={word}
+                className={`${getColor(count)} font-bold tracking-wider transition-colors cursor-default`}
+                style={{ fontSize: getFontSize(count) }}
+                title={`×${count}`}
+              >
+                {word}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mx-4 border-t border-slate-800" />
+
+     {/* 提交区 */}
+      <div className="px-4 pb-4">
+        {/* 已提交的词 */}
+        {myWords.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {myWords.map((w) => (
+              <span
+                key={w.id}
+                className="inline-flex items-center gap-1.5 text-xs text-[#9e3f4d] border border-[#7a2f3a]/50 bg-[#7a2f3a]/10 px-2.5 py-1 tracking-wider"
+              >
+                <span className="text-[#9e3f4d]/60 text-[9px]">▸</span>
+                {w.word}
+               <button
+                onClick={() => handleDelete(w.id)}
+                className="text-slate-600 hover:text-red-400 cursor-pointer transition-colors ml-0.5 bg-transparent border-0 outline-none appearance-none p-0"
+                title="撤回"
+              >
+                <X size={9} />
+              </button>
+
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* 输入行 */}
+        <div className="flex gap-0 items-stretch">
+          {/* 左侧前缀装饰 */}
+          <div className="flex items-center px-3 bg-[#0a0d14] border border-r-0 border-slate-700 text-[#9e3f4d] text-xs tracking-widest shrink-0 select-none">
+            &gt;_
+          </div>
+          <input
+            type="text"
+            value={inputWord}
+            onChange={(e) => { setInputWord(e.target.value); setError(""); }}
+            onKeyDown={(e) => e.key === "Enter" && !submitting && handleSubmit()}
+            placeholder="INPUT IMPRESSION WORD"
+            maxLength={5}
+            disabled={remaining <= 0 || submitting}
+            className="flex-1 bg-[#0a0d14] border border-slate-700 focus:border-[#7a2f3a] outline-none px-3 py-2.5 text-xs text-slate-200 placeholder-slate-700 disabled:opacity-40 font-mono tracking-widest transition-colors"
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={!inputWord.trim() || remaining <= 0 || submitting}
+            className="px-4 py-2.5 text-xs font-bold tracking-widest border border-l-0 border-slate-700 hover:border-[#7a2f3a] bg-[#0a0d14] hover:bg-[#7a2f3a]/10 text-slate-500 hover:text-[#9e3f4d] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shrink-0"
+          >
+            {submitting ? (
+              <span className="animate-pulse">···</span>
+            ) : (
+              "INJECT"
+            )}
+          </button>
+        </div>
+
+        {/* 错误提示 */}
+        {error && (
+          <p className="mt-2 text-[10px] text-red-400 tracking-wider flex items-center gap-1.5">
+            <span className="text-red-500">✕</span>
+            {error}
+          </p>
+        )}
+
+        {/* 状态行 */}
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-[9px] text-slate-700 tracking-widest">
+            匿名提交 · 可分批提交
+          </span>
+          <span className={`text-[9px] tracking-widest font-bold ${remaining <= 0 ? "text-slate-600" : "text-[#9e3f4d]/60"}`}>
+            QUOTA {5 - remaining}/5
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// NEW: 信号雷达组件（右侧栏）
+// ==========================================
+const RadarPanel = ({ signals, onSignalClick, isScanning }: {
+  signals: any[];
+  onSignalClick: (s: any) => void;
+  isScanning: boolean;
+}) => {
+  return (
+    <div className="relative border border-slate-700/80 bg-[#0c1017]/90 backdrop-blur-md flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.8)] font-mono" style={{ minHeight: 240 }}>
+      {/* Panel 四角装饰 */}
+      <div className="absolute -top-[1px] -left-[1px] w-2 h-2 border-t border-l border-slate-500 z-10"></div>
+      <div className="absolute -top-[1px] -right-[1px] w-2 h-2 border-t border-r border-slate-500 z-10"></div>
+      <div className="absolute -bottom-[1px] -left-[1px] w-2 h-2 border-b border-l border-slate-500 z-10"></div>
+      <div className="absolute -bottom-[1px] -right-[1px] w-2 h-2 border-b border-r border-slate-500 z-10"></div>
+
+      {/* 标题栏 — 与 Panel 完全一致 */}
+      <div className="flex justify-between items-center px-4 py-3 border-b border-slate-700/80 bg-[#11141c]">
+        <div className="flex items-center gap-2">
+          <RadioIcon size={14} className="text-[#9e3f4d]" />
+          <span className="text-sm font-bold tracking-widest text-slate-200">信号雷达</span>
+        </div>
+        <span className="text-xs text-[#9e3f4d] animate-pulse">● ACTIVE</span>
+      </div>
+
+      {/* 雷达主体 */}
+      <div className="flex-1 relative overflow-hidden" style={{ minHeight: 196 }}>
+        {/* SVG 背景网格 */}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+          {[20, 40, 60, 80].map((r) => (
+            <circle key={r} cx="100" cy="100" r={r} fill="none" stroke="#1e293b" strokeWidth="1" />
+          ))}
+          <line x1="100" y1="20" x2="100" y2="180" stroke="#1e293b" strokeWidth="0.5" />
+          <line x1="20" y1="100" x2="180" y2="100" stroke="#1e293b" strokeWidth="0.5" />
+          {/* 扫描臂 — 复用已有 sweep keyframe */}
+          <line
+            x1="100" y1="100" x2="100" y2="22"
+            stroke="#9e3f4d" strokeWidth="1.5" opacity="0.7"
+            style={{ transformOrigin: "100px 100px", animation: "sweep 4s linear infinite" }}
+          />
+        </svg>
+
+        {/* 信号点 */}
+        {isScanning ? (
+           <div className="absolute inset-0 flex items-center justify-center bg-[#0c1017]/80">
+            <RefreshCw size={24} className="text-slate-500 animate-spin" />
+           </div>
+        ) : (
+        signals.slice(0, 20).map((sig) => (
+          <div
+            key={sig.id}
+            onClick={() => onSignalClick(sig)}
+            className="absolute cursor-pointer group"
+            style={{
+              left: `${sig.pos_x}%`,
+              top: `${sig.pos_y}%`,
+              transform: "translate(-50%, -50%)",
+              width: 18,
+              height: 18,
+            }}
+          >
+            {/* 呼吸光圈 */}
+            <span
+              className="absolute inset-0 rounded-full bg-[#9e3f4d] opacity-40 animate-ping"
+              style={{ animationDuration: "2s" }}
+            />
+            {/* 信号点本体 */}
+            <span
+              className="absolute rounded-full bg-[#9e3f4d] shadow-[0_0_8px_#7a2f3a] group-hover:scale-150 transition-transform z-10"
+              style={{
+                width: 10,
+                height: 10,
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
+            />
+            {/* hover 标签 */}
+            <span className="absolute left-5 top-0 text-[9px] text-slate-400 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-[#0c1017] border border-slate-700 px-1.5 py-0.5 z-50 pointer-events-none">
+              {(sig.access_code || sig.title || "").slice(0, 14)}
+            </span>
+          </div>
+        ))
+    )}
+
+      </div>
+    </div>
+  );
+};
+
 
 // ==========================================
 // 2. 基础复用组件
@@ -1557,7 +2021,10 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
 
       <header className="relative z-40 flex flex-col md:flex-row justify-between md:items-end pb-4 border-b border-slate-700 mb-4 lg:mb-5 gap-4">
         <div className="flex items-baseline gap-4 md:gap-6">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] text-slate-100">ONYCHINUS<span className="text-[#7a2f3a] text-xl md:text-2xl ml-3">2.0</span></h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] text-slate-100 flex items-center gap-3">
+            <img src="/logo.png" alt="" aria-hidden="true" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+            ONYCHINUS<span className="text-[#7a2f3a] text-xl md:text-2xl ml-3">3.0</span>
+          </h1>
         </div>
                 <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto">
           <div className="flex gap-3 text-sm font-bold tracking-widest bg-[#11141c] p-1 border border-slate-700">
@@ -1613,91 +2080,18 @@ const Dashboard = ({ currentUser, onLogout, lang, setLang, setCurrentUser }: any
 
         </aside>
 
-        <section className="flex-1 flex items-center justify-center relative border border-slate-700/60 bg-[#0c1017]/40 p-4 lg:p-0 min-h-[400px] overflow-hidden shadow-[inset_0_0_80px_rgba(0,0,0,0.6)]">
-          <div className="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-slate-700"></div>
-          <div className="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-slate-700"></div>
-          <div className="absolute bottom-6 left-6 w-8 h-8 border-b-2 border-l-2 border-slate-700"></div>
-          <div className="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-slate-700"></div>
-          
-          <div className="absolute inset-0 bg-[#0a0d14] blur-[150px] opacity-10 rounded-full z-0 pointer-events-none"></div>
-          
-          <div className="relative w-full max-w-[700px] aspect-square flex items-center justify-center z-10 scale-90 lg:scale-100">
-            <div className="absolute -top-6 text-xs text-slate-500 font-bold hidden md:block">000° LAT: {scanNumbers.lat} N</div>
-            <div className="absolute -bottom-6 text-xs text-slate-500 font-bold hidden md:block">180° LNG: {scanNumbers.lng} E</div>
-            <div className="absolute -left-10 text-xs text-slate-500 font-bold hidden md:block">270°</div>
-            <div className="absolute -right-10 text-xs text-slate-500 font-bold hidden md:block">090°</div>
-
-            <Crosshair size={30} className="absolute text-[#7a2f3a] z-20" strokeWidth={1.5} />
-            <div className="absolute w-[40px] h-[40px] rounded-full border border-[#7a2f3a]/40 z-10"></div>
-            <div className="absolute w-full h-[1px] bg-slate-700/40"></div><div className="absolute w-[1px] h-full bg-slate-700/40"></div>
-            
-            <div className="absolute inset-16 md:inset-20 rounded-full border border-slate-700/30"></div>
-            <div className="absolute inset-32 md:inset-40 rounded-full border-[2px] border-slate-800/50 border-dashed"></div>
-            
-            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 25, ease: "linear" }} className="absolute inset-24 md:inset-28 rounded-full border border-slate-700/40 border-dotted">
-               <div className="absolute top-0 left-1/2 w-2 h-2 bg-[#7a2f3a] rounded-full shadow-[0_0_10px_#7a2f3a]"></div>
-            </motion.div>
-
-            <motion.div animate={{ rotate: -360 }} transition={{ repeat: Infinity, duration: 35, ease: "linear" }} className="absolute inset-40 md:inset-48 rounded-full border border-slate-700/30">
-               <div className="absolute bottom-1/4 right-0 w-1.5 h-1.5 bg-slate-400 rounded-full shadow-[0_0_8px_#94a3b8]"></div>
-            </motion.div>
-
-            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 50, ease: "linear" }} className="absolute inset-52 md:inset-64 rounded-full border border-slate-800/60 border-dashed">
-               <div className="absolute top-1/3 left-0 w-2.5 h-2.5 bg-[#471b23] rounded-full shadow-[0_0_12px_#471b23]"></div>
-            </motion.div>
-
-            <motion.div animate={{ rotate: -360 }} transition={{ repeat: Infinity, duration: 90, ease: "linear" }} className="absolute inset-64 md:inset-[320px] rounded-full border border-slate-700/20">
-               <div className="absolute bottom-0 right-1/2 w-1 h-1 bg-white rounded-full opacity-50"></div>
-            </motion.div>
-            
-            <div className="absolute inset-4 md:inset-6 rounded-full z-10 radar-sweep pointer-events-none" style={{ background: "conic-gradient(from 0deg, transparent 70%, rgba(122, 47, 58, 0.05) 95%, rgba(122, 47, 58, 0.4) 100%)" }} />
-
-            {isScanning ? (
-              <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#0c1017]/80 rounded-full backdrop-blur-sm">
-                <div className="flex flex-col items-center gap-4">
-                  <RefreshCw size={40} className="text-slate-500 animate-spin" />
-                  <span className="text-sm text-slate-500 tracking-widest animate-pulse">RE-SCANNING SECTOR...</span>
-                </div>
-              </div>
-            ) : (
-              displaySignals.map((sig) => (
-                <div key={sig.id} className="absolute z-20 flex items-center justify-center group cursor-pointer" style={{ left: `${sig.pos_x}%`, top: `${sig.pos_y}%` }} onClick={() => setActiveSignal(sig)}>
-                  
-                  {sig.passkey ? (
-                    <div 
-                      className="relative w-[14px] h-[14px] md:w-[16px] md:h-[16px] rounded-full group-hover:scale-150 transition-transform shadow-[0_0_10px_rgba(0,0,0,0.8)]"
-                      style={{ background: 'radial-gradient(circle at center, #471b23 0%, #1e293b 60%, #0f172a 100%)', boxShadow: 'inset 0 0 4px rgba(71,27,35,0.5)' }}
-                    >
-                       <div className="absolute inset-0 bg-[#7a2f3a] rounded-full animate-ping opacity-20"></div>
-                    </div>
-                  ) : sig.board === "gallery" ? (
-                    <div className="relative w-[10px] h-[10px] md:w-[12px] md:h-[12px] bg-[#a6b1bf] rounded-full shadow-[0_0_12px_#a6b1bf] group-hover:scale-150 transition-transform"></div>
-                  ) : (
-                    <div className="relative w-[10px] h-[10px] md:w-[12px] md:h-[12px] bg-[#7a2f3a] rounded-full shadow-[0_0_12px_#7a2f3a] group-hover:scale-150 transition-transform"></div>
-                  )}
-
-                  <span className="absolute left-5 md:left-6 top-0 text-[10px] md:text-xs text-slate-200 opacity-0 group-hover:opacity-100 bg-[#0a0d14] border border-slate-700 px-3 py-1.5 z-50 pointer-events-none whitespace-nowrap shadow-lg font-bold">
-                    {sig.passkey && <Lock size={10} className="inline mr-2 text-slate-500"/>}
-                    {sig.access_code || `SIG-${sig.id.substring(0,4).toUpperCase()}`}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-
-
+        <section className="flex-1 flex flex-col gap-4 relative border border-slate-700/60 bg-[#0c1017]/40 p-4 min-h-[400px] overflow-y-auto custom-scrollbar">
+          <CommanderFile currentUser={currentUser} />
+          <ImpressionCloud currentUser={currentUser} />
         </section>
 
         <aside className="w-full lg:w-[320px] flex flex-col gap-6 shrink-0 overflow-y-auto custom-scrollbar lg:pl-3">
-          <Panel title="SYSTEM ANALYTICS" className="h-[200px] md:h-[240px]">
-             <div className="flex items-center gap-6 mt-6 md:mt-8">
-                <div className="w-16 h-16 md:w-24 md:h-24 rounded-full border-4 border-slate-800 border-t-slate-500 flex items-center justify-center text-base md:text-xl font-bold text-slate-200">76%</div>
-                <div className="flex-1 space-y-4 text-xs md:text-sm text-slate-400 font-bold">
-                  <div className="flex justify-between"><span>{t.rsrc}</span><span className="text-slate-200">76%</span></div>
-                  <div className="flex justify-between"><span>{t.energy}</span><span className="text-slate-200">82%</span></div>
-                </div>
-             </div>
-          </Panel>
+          <RadarPanel
+            signals={displaySignals}
+            onSignalClick={(sig) => setActiveSignal(sig)}
+            isScanning={isScanning}
+          />
+
           <Panel title={t.quick_access} className="flex-shrink-0">
             {isTargeting ? (
               <div className="flex flex-col gap-3 p-2">
